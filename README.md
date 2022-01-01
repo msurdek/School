@@ -46,4 +46,8 @@ Here is some recommended viewing:
 
 https://github.com/msurdek/School/tree/main/DAT%20610%20Optimization%20%26%20Risk%20Assessment/Assignments/Exercises
 
+https://github.com/msurdek/School/tree/main/IT%20697%20Python/Assignments
 
+https://github.com/msurdek/School/tree/main/DAT%20520%20Decision%20Methods%20and%20Modeling/Assignments/Project
+
+https://github.com/msurdek/School/tree/main/DAT%20530%20Present%20%26%20Visualize%20Data/Assignments

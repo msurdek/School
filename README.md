@@ -30,7 +30,7 @@ DAT-640	Predictive Analytics (Winter 2022)
 
 DAT-650	Advanced Data Analytics (Spring 2022)
 
-               TBD Elective (Summer 2022)
+TBD Elective (Summer 2022)
 
 DAT-690        Capstone in Data Analytics (Fall 2022)
 

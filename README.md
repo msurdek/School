@@ -40,6 +40,8 @@ For most courses, you will find a semester-long project, weekly assignments and 
 
 Courses from the second half of my program will be more structured and complete.
 
+Final deliverables will have the naming convention "Surdek ........" such as ""Surdek Final Project.odt.
+
 Examples can be found of work in R, Python, SQL, statistics, and data visualization.
 
 Here is some recommended viewing:

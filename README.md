@@ -44,4 +44,6 @@ Examples can be found of work in R, Python, SQL, statistics, and data visualizat
 
 Here is some recommended viewing:
 
+https://github.com/msurdek/School/tree/main/DAT%20610%20Optimization%20%26%20Risk%20Assessment/Assignments/Exercises
+
 

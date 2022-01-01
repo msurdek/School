@@ -1,6 +1,6 @@
 # School
 
-Projects, notes, assignments, discussions, and other resources from the 14 Courses in my Data Analytics Masters Program:
+Files from the 14 Courses in my Data Analytics Masters Program:
 
 ---------------------------------------------------------------------------
 
@@ -16,9 +16,9 @@ DAT-530	Present & Visualize Data (Winter 2021)
 
 DAT-520	Decision Methods and Modeling (Spring 2021)
 
-IT-697	Experiential Learning SQL (Spring 2021)
+IT-697	        Experiential Learning SQL (Spring 2021)
 
-IT-697	Experiential Learning Python (Summer 2021)
+IT-697	        Experiential Learning Python (Summer 2021)
 
 QSO-640	Project Management (Summer 2021)
 
@@ -30,6 +30,18 @@ DAT-640	Predictive Analytics (Winter 2022)
 
 DAT-650	Advanced Data Analytics (Spring 2022)
 
-TBD Elective (Summer 2022)
+               TBD Elective (Summer 2022)
 
-DAT-690	Capstone in Data Analytics (Fall 2022)
+DAT-690        Capstone in Data Analytics (Fall 2022)
+
+---------------------------------------------------------------------------
+
+For most courses, you will find a semester-long project, weekly assignments and discussion posts, notes, and other resources.
+
+Courses from the second half of my program will be more structured and complete.
+
+Examples can be found of work in R, Python, SQL, statistics, and data visualization.
+
+Here is some recommended viewing:
+
+

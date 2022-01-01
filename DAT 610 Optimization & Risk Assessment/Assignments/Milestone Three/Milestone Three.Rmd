@@ -1,0 +1,57 @@
+---
+title: "Module Four Exercise"
+author: "msurdek"
+date: "11/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r, message = FALSE, echo = TRUE, results = 'hide'}
+library(readr)
+library(tidyverse)
+library(FactoMineR)
+```
+
+## read and clean claims file
+
+```{r, message = FALSE, echo = TRUE, results = 'hide'}
+claims <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Two Exercise/DAT 610 Auto Accident Personal Injury Claims-1.csv")
+claims <- claims[!is.na(claims$Claim_Number),]
+```
+
+## convert amounts to numeric
+
+```{r, message = FALSE, echo = TRUE, include = TRUE, warning = FALSE}
+claims <- claims %>%
+  mutate(CLAIM_AMOUNT = parse_number(CLAIM_AMOUNT)) %>%
+  mutate(PAID_AMOUNT = parse_number(PAID_AMOUNT))
+```
+
+##claim v paid amount scatterplot
+
+```{r, message = FALSE, echo = FALSE, include = FALSE, warning = FALSE}
+claims %>%
+  ggplot(mapping = aes(x = CLAIM_AMOUNT, y = PAID_AMOUNT)) +
+  geom_point() +
+  theme_bw() +
+  xlim(0,50000) +
+  ylim(0,50000)
+```
+
+##colored by suspicion score
+
+```{r, message = FALSE, echo = TRUE, include = TRUE, warning = FALSE}
+claims %>%
+  ggplot(mapping = aes(x = CLAIM_AMOUNT, y = PAID_AMOUNT, color = as.factor(CLAIM_SUSPICION_SCORE))) +
+  geom_point() +
+  theme_bw() +
+  xlim(0,50000) +
+  ylim(0,50000) +
+  theme(legend.position = "top")
+```
+

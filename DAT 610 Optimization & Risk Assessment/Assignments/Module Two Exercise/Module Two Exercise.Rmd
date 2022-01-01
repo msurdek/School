@@ -1,0 +1,30 @@
+---
+title: "Module Two Exercise"
+author: "msurdek"
+date: "10/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load readr package
+
+```{r, message = FALSE, echo = TRUE}
+library(readr)
+```
+
+## read claims file
+
+```{r, message = FALSE, echo = TRUE}
+data <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Two Exercise/DAT 610 Auto Accident Personal Injury Claims-1.csv")
+```
+
+## remove empty rows and print dataframe
+
+```{r, echo = TRUE}
+data <- data[!is.na(data$Claim_Number),]
+data
+```
+

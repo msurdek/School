@@ -1,0 +1,46 @@
+---
+title: "Milestone Four"
+author: "msurdek"
+date: "11/23/2021"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r, message = FALSE, echo = FALSE, results = 'hide'}
+library(readr)
+library(tidyverse)
+library(FactoMineR)
+```
+
+## read and clean claims file
+
+```{r, message = FALSE, echo = FALSE, results = 'hide'}
+claims <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Milestone Four/DAT 610 Auto Accident Personal Injury Claims-1.csv")
+claims <- claims[!is.na(claims$Claim_Number),]
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

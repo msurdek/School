@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1619355984122.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "663227318",
+    "id" : "8C915C5F",
+    "lastKnownWriteTime" : 1619357574,
+    "last_content_update" : 1619357574302,
+    "path" : "~/SCHOOL/DAT 520 Decision Methods and Modeling/DAT 520 Final Project/Bathroom Remodel Costs.R",
+    "project_path" : "Bathroom Remodel Costs.R",
+    "properties" : {
+        "cursorPosition" : "12,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

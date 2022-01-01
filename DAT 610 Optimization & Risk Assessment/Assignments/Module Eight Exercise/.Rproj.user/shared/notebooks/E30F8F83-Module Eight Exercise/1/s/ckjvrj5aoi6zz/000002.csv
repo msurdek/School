@@ -1,0 +1,4 @@
+"0","m <- mean(iihs_data_EX8$Collision.)"
+"0","s <- sd(iihs_data_EX8$Collision.)"
+"0","mu <- log(m/sqrt(1+(s^2/m^2)))	# mean lognormal distribution"
+"0","sigma <- sqrt(log(1+s^2/m^2))"

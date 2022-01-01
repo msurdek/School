@@ -1,0 +1,7 @@
+"0","myData=claims[1:502,6:25]"
+"0",""
+"0","rid=data.frame(""RIDIT"" = cbind(""01_i1""= 2*(0 + 0.5*table(myData$IND_01)[1]/502) - 1,""O1_i2""=2*(table(myData$IND_01)[1]/502 + "
+"0","0.5*table(myData$IND_01)[2]/502) - 1,""01_i5""=2*(table(myData$IND_01)[1]/502 + "
+"0","table(myData$IND_01)[2]/502+table(myData$IND_01)[3]/502+table(myData$IND_01)[4]/502+0.5*table(myData$IND_01)[5]/502) - 1))"
+"0",""
+"0","rid"

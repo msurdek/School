@@ -1,0 +1,89 @@
+---
+title: "Module Four Exercise"
+author: "msurdek"
+date: "11/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r, message = FALSE, echo = TRUE, results = 'hide'}
+library(readr)
+library(tidyverse)
+library(FactoMineR)
+```
+
+## read and clean claims file
+
+```{r, message = FALSE, echo = TRUE, results = 'hide'}
+claims <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Two Exercise/DAT 610 Auto Accident Personal Injury Claims-1.csv")
+claims <- claims[!is.na(claims$Claim_Number),]
+```
+
+## formula to confirm ridit-ized values
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+myData=claims[1:502,6:25]
+
+rid=data.frame("RIDIT" = cbind("01_i1"= 2*(0 + 0.5*table(myData$IND_01)[1]/502) - 1,"O1_i2"=2*(table(myData$IND_01)[1]/502 + 
+0.5*table(myData$IND_01)[2]/502) - 1,"01_i5"=2*(table(myData$IND_01)[1]/502 + 
+table(myData$IND_01)[2]/502+table(myData$IND_01)[3]/502+table(myData$IND_01)[4]/502+0.5*table(myData$IND_01)[5]/502) - 1))
+
+rid
+```
+
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+claims %>%
+  select(IND_01, RIDIT_01) %>%
+  arrange(IND_01, decreasing = FALSE) %>%
+  unique()
+```
+
+## pivot data so that each claim has 20 rows (1 for each metric) and columns for the metrics IND and RIDIT scores
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+claims_direction = claims %>%
+  select(c(1,6:45)) %>%
+  pivot_longer(2:41, names_to = c(".value", "variable"), names_sep = "_")
+
+claims_direction
+```
+
+## plot IND v RIDIT for each variable
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+claims_direction %>%
+  ggplot(mapping = aes(x = IND, y = RIDIT)) +
+  geom_point() +
+  facet_wrap(~variable)
+```
+## PCA
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+myRidit = claims[1:502,26:45]
+
+myRiditPCA=princomp(~ ., data = myRidit, cor = TRUE)
+summary(myRiditPCA)
+```
+
+## screeplot
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+screeplot(myRiditPCA)
+```
+
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+res.pca = PCA(claims[,6:25], scale.unit=TRUE, ncp=5, graph=T)
+```
+
+```{r, message = FALSE, echo = TRUE, include = FALSE}
+claims$CS2 <- as.factor(claims$CLAIM_SUSPICION_SCORE) 
+myData2 <- claims[c(6:25, 46)]
+res.pca3 = PCA(myData2[1:21], scale.unit=TRUE, ncp=5, quali.sup=21, graph=T) 
+```
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+plotellipses(res.pca3,21)
+```

@@ -1,0 +1,4 @@
+username, total_guesses, correct_guess
+msurdek, 8, True
+msurdek, 8, False
+ECS, 6, True

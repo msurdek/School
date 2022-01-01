@@ -1,0 +1,13 @@
+"0","claims <- read_csv(""/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Two Exercise/DAT 610 Auto Accident Personal Injury Claims-1.csv"")"
+"1","[1m[1mRows: [1m[22m[34m[34m1004[34m[39m [1m[1mColumns: [1m[22m[34m[34m45[34m[39m
+"
+"1","[36m──[39m [1m[1mColumn specification[1m[22m [36m────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m  (2): CLAIM_AMOUNT, PAID_AMOUNT
+[32mdbl[39m (43): Claim_Number, Policy_ID, CLAIM_SUSPICION_SCORE, IND_01, IND_02, IND_03, IND_04, IND_05, IND_06, IND_07, IND_08...
+"
+"1","
+[36mℹ[39m Use [38;5;235m[48;5;253m[38;5;235m[48;5;253m`spec()`[48;5;253m[38;5;235m[49m[39m to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set [38;5;235m[48;5;253m[38;5;235m[48;5;253m`show_col_types = FALSE`[48;5;253m[38;5;235m[49m[39m to quiet this message.
+"
+"0","claims <- claims[!is.na(claims$Claim_Number),]"

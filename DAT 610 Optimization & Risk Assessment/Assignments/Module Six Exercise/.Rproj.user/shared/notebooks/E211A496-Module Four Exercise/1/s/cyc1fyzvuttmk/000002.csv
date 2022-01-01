@@ -1,0 +1,1 @@
+"0","res.pca = PCA(claims[,6:25], scale.unit=TRUE, ncp=5, graph=T)"

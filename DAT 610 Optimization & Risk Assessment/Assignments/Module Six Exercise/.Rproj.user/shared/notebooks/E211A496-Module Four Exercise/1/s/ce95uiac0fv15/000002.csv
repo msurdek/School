@@ -1,0 +1,3 @@
+"0","claims$CS2 <- as.factor(claims$CLAIM_SUSPICION_SCORE) "
+"0","myData2 <- claims[c(6:25, 46)]"
+"0","res.pca3 = PCA(myData2[1:21], scale.unit=TRUE, ncp=5, quali.sup=21, graph=T) "

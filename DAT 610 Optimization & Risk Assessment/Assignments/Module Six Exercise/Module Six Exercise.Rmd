@@ -1,0 +1,110 @@
+---
+title: "Module Six Exercise"
+author: "msurdek"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r message=FALSE, ,echo = TRUE, include=TRUE, results=FALSE}
+library(readr)
+library(tidyverse)
+library(FactoMineR)
+```
+
+## read and clean iihs_data file
+
+```{r message=FALSE, echo = TRUE, include=TRUE, results=TRUE}
+vehicles <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Six Exercise/iihs_data.csv")
+vehicles <- vehicles[!is.na(vehicles$Vehicle),]
+```
+
+## Principal Component Analysis
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+
+model=princomp(na.omit(vehicles[1:75,3:8]))
+summary(model)
+model$loadings
+```
+
+## Screeplot
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+screeplot(model)
+```
+
+## loadings
+
+```{r}
+res.pca = PCA(vehicles[,3:8], scale.unit=TRUE, ncp=5, graph=T)
+```
+
+## Linear Regression
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+my_data <- vehicles[,3:8]
+
+vehicles$avgloss <- rowMeans(my_data, na.rm=TRUE)
+
+vehicles_tr <- transform(vehicles, Buy = as.numeric(vehicles$avgloss < 100))
+
+attach(vehicles_tr)
+lm_model=lm(Buy ~ Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury.)
+detach(vehicles_tr)
+summary(lm_model)
+```
+
+## Logistic Regression
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+attach(vehicles_tr)
+lg_model=glm(Buy ~ Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury.,family = "quasibinomial",na.action=na.omit,control = list(maxit = 50))
+detach(vehicles_tr)
+summary(lg_model)
+```
+
+## Linear Regression w average loss
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+attach(vehicles_tr)
+lm_model2=lm(Buy ~ avgloss + Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury.)
+detach(vehicles_tr)
+summary(lm_model2)
+```
+
+## Logistic Regression w average loss
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+attach(vehicles_tr)
+lg_model2=glm(Buy ~ Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury. + avgloss,family = "quasibinomial",na.action=na.omit,control = list(maxit = 50))
+detach(vehicles_tr)
+summary(lg_model2)
+```
+
+## simplest
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+attach(vehicles_tr)
+lg_model2=glm(Buy ~ avgloss,family = "quasibinomial",na.action=na.omit,control = list(maxit = 50))
+detach(vehicles_tr)
+summary(lg_model2)
+```
+
+## sorted
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+#sorted_data <- vehicles_tr[order(avgloss),]
+#sorted_data
+```
+
+
+
+
+
+

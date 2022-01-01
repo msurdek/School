@@ -1,0 +1,70 @@
+---
+title: "Module Six Exercise"
+author: "msurdek"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r message=FALSE, include=FALSE, results=FALSE}
+library(readr)
+library(tidyverse)
+library(FactoMineR)
+```
+
+## read and clean iihs_data file
+
+```{r message=FALSE, include=FALSE, results=}
+vehicles <- read_csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Six Exercise/iihs_data.csv")
+vehicles <- vehicles[!is.na(vehicles$Vehicle),]
+```
+
+## Principal Component Analysis
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+
+model=princomp(na.omit(vehicles[1:75,3:8]))
+summary(model)
+screeplot(model)
+```
+
+## Linear Regression
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+my_data <- vehicles[,3:8]
+
+vehicles$avgloss <- rowMeans(my_data, na.rm=TRUE)
+
+vehicles_tr <- transform(vehicles, Buy = as.numeric(vehicles$avgloss < 100))
+
+attach(vehicles_tr)
+lm_model=lm(Buy ~ Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury.)
+detach(vehicles_tr)
+summary(lm_model)
+```
+
+## Logistic Regression
+
+```{r, message = FALSE, echo = TRUE, include = TRUE}
+attach(vehicles_tr)
+lg_model=glm(Buy ~ Collision. + Property.damage. + Comprehensive. + Personal.injury. + Medical.payment. + Bodily.injury.,family = "quasibinomial",na.action=na.omit,control = list(maxit = 50))
+detach(vehicles_tr)
+summary(lg_model)
+```
+
+
+
+
+
+
+
+
+
+
+
+

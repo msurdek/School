@@ -1,0 +1,33 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1619356802176.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "914832B6",
+    "lastKnownWriteTime" : 7310028807570858028,
+    "last_content_update" : 1619356802176,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "EFF4D9AC",
+        "caption" : "bathrooms",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=bathrooms&cache_key=EFF4D9AC",
+        "displayedObservations" : 1963,
+        "environment" : "",
+        "expression" : "bathrooms",
+        "object" : "bathrooms",
+        "preview" : 0,
+        "totalObservations" : 1963,
+        "variables" : 7
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

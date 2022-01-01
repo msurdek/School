@@ -1,0 +1,5 @@
+"0","claims_direction = claims %>%"
+"0","  select(c(1,6:45)) %>%"
+"0","  pivot_longer(2:41, names_to = c("".value"", ""variable""), names_sep = ""_"")"
+"0",""
+"0","claims_direction"

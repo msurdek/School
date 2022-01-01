@@ -1,0 +1,88 @@
+---
+title: "Module Eight Exercise"
+author: "msurdek"
+date: "11/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## load packages
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=FALSE}
+library(readr)
+library(tidyverse)
+```
+
+## read and clean iihs_data file
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+iihs_data_EX8 <- read.csv("/home/msurdek/Documents/School/DAT 610 Optimization & Risk Assessment/Assignments/Module Eight Exercise/iihs_data_for_EX_8.csv")
+iihs_data_EX8 <- na.omit(iihs_data_EX8) 
+rownames(iihs_data_EX8) <- NULL
+yearMean <- mean(table(iihs_data_EX8$YEAR))
+yearMean
+rpois(10, yearMean)    # 10 samples
+rpois(1, yearMean)	#  1 sample
+```
+
+## determine average number of loss events per year and draw samples of loss frequency in a single year 
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+table(iihs_data_EX8$YEAR)
+table(iihs_data_EX8$YEAR)*mean(iihs_data_EX8$Collision.)   # take note of these values
+yearMean <- mean(table(iihs_data_EX8$YEAR))
+rpois(10, yearMean)    # 10 samples
+rpois(1, yearMean)	#  1 sample
+```
+
+## create lognormal distribution of average loss event severity 
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+m <- mean(iihs_data_EX8$Collision.)
+m
+s <- sd(iihs_data_EX8$Collision.)
+s
+mu <- log(m/sqrt(1+(s^2/m^2)))	# mean lognormal distribution
+mu
+sigma <- sqrt(log(1+s^2/m^2))
+sigma
+```
+
+## draw samples of average loss severity
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+rlnorm(10,mu,sigma)    # 10 samples
+rlnorm(1,mu,sigma)      # 1 sample
+```
+
+## monte carlo simulation of frequency and severity distributions
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+rpois(1,yearMean)* rlnorm(1,mu,sigma)
+rpois(1,yearMean)* rlnorm(1,mu,sigma)
+rpois(1,yearMean)* rlnorm(1,mu,sigma)
+rpois(1,yearMean)* rlnorm(1,mu,sigma)
+rpois(1,yearMean)* rlnorm(1,mu,sigma)
+```
+
+## extrapolation
+
+```{r, message=FALSE, ,echo = TRUE, include=TRUE, results=TRUE}
+monte <- data.frame(sim = rpois(1000000,yearMean)* rlnorm(1000000,mu,sigma))
+sorted <- monte %>%
+  arrange(desc(sim))
+sorted$sim[1000]
+```
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+"0","res.pca = PCA(vehicles[,3:8], scale.unit=TRUE, ncp=5, graph=T)"
+"2","Warning in PCA(vehicles[, 3:8], scale.unit = TRUE, ncp = 5, graph = T) :"
+"2","
+ "
+"2"," Missing values are imputed by the mean of the variable: you should use the imputePCA function of the missMDA package
+"

@@ -1,0 +1,14 @@
+"0","library(expm)
+"
+"2","package ‘expm’ was built under R version 4.0.3"
+"2","Loading required package: Matrix
+"
+"2","
+Attaching package: ‘expm’
+
+"
+"2","The following object is masked from ‘package:Matrix’:
+
+    expm
+
+"

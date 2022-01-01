@@ -1,0 +1,20 @@
+Create a Python program for a number guessing game.
+
+Here are the requirements:
+
+Your program generates a random number between -100 and 100 and keeps asking the user to guess the number until the user guesses it correctly.
+
+Your random number generator should be implemented as a Python function which takes min and max
+as input parameters and returns a random number between those values including the min and the max.
+
+If the user guesses a number that is lower or higher than the number to be guessed then indicate that
+information to the user as a ‘low guess’ or a ‘high guess’ so that the user can get to the correct guess quicker.
+
+The program keeps track on number of guesses taken by the user to get to the correct guess. This is user’s score.
+
+Use a parameter for number of allowed guesses (set it some value, say 7) and your program congratulates users
+if user guesses the number correctly in number of guesses less than the number of allowed guesses.
+The program does not allow user to continue beyond the number of allowed guesses and tells user that the number
+wasn’t guessed correctly in allowed attempts. You can print the number of allowed guesses at the beginning of the game.
+
+Write out user name and number of guesses taken to a game report file. Each attempt at the game will add a new line to the report file.

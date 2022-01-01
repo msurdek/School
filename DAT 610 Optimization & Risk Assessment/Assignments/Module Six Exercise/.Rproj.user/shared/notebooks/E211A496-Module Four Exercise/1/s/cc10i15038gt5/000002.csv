@@ -1,0 +1,4 @@
+"0","claims_direction %>%"
+"0","  ggplot(mapping = aes(x = IND, y = RIDIT)) +"
+"0","  geom_point() +"
+"0","  facet_wrap(~variable)"

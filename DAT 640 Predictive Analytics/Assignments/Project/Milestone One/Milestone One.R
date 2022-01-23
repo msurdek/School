@@ -20,3 +20,4 @@ colnames(coil) <- c("MOSTYPE","MAANTHUI","MGEMOMV","MGEMLEEF","MOSHOOFD","MGODRK
                            "AINBOED","ABYSTAND","CARAVAN")
 
 summary(coil)
+str(coil)

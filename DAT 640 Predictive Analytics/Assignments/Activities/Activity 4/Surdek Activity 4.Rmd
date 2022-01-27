@@ -1,0 +1,100 @@
+---
+title: "Surdek Activity 4"
+author: "msurdek"
+date: "1/26/2022"
+output:
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## load packages
+
+```{r, message=FALSE, warnings=FALSE}
+library(readr)
+library(tidyverse)
+library(janitor)
+library(scales)
+library(ggiraph)
+library(patchwork)
+```
+
+## import and clean data
+
+```{r, message=FALSE, warnings=FALSE}
+pga <- read_csv('pgaTourData.csv') %>%
+  clean_names()
+
+pga$wins[is.na(pga$wins)] <- 0
+
+pga <- pga  %>%
+  mutate(tooltip_text = paste0(player_name, "\n",
+                               year, "\n",
+                               "Wins: ", wins),
+         tooltip_text2 = paste0(player_name, "\n",
+                                year, "\n",
+                                "Average Score: ", average_score, "\n",
+                                "Average Driving Distance: ", avg_distance),
+         money = gsub(",","",money),
+         money = gsub("\\$","",money),
+         money = as.numeric(money),
+         player_name = gsub("'","",player_name))
+
+fifteen <- pga %>%
+  filter(year == 2015)
+```
+
+## create interactive plots
+
+```{r, message=FALSE, warnings=FALSE}
+wins_graph <- fifteen %>%
+  filter(wins >= 1) %>%
+  ggplot(aes(x = reorder(player_name, wins),
+             y = wins,
+             tooltip = tooltip_text,
+             data_id = player_name)) +
+  geom_bar_interactive(fill = "blue",
+                       stat = "identity",
+                       width = .7) +
+  theme_bw() +
+  coord_flip() +
+  labs(x = NULL,
+       y = "Wins") +
+  plot_annotation(title = "PGA Tour Wins and Statistics (2015 Season)",
+                  theme = theme(plot.title = element_text(hjust = 0.5)))
+
+stats_graph <- fifteen %>%
+  ggplot(aes(x = average_score,
+             y = avg_distance,
+             color = as.factor(wins),
+             tooltip = tooltip_text2,
+             data_id = player_name)) +
+  geom_point_interactive() +
+  theme_bw() +
+  scale_x_reverse() +
+  labs(x = "Average Score",
+       y = "Driving Distance",
+       color = "Wins")
+```
+
+## create girafe object
+
+```{r, warning = FALSE}
+girafe(code = print(wins_graph + stats_graph), 
+       width_svg = 8, height_svg = 4) %>% 
+  girafe_options(opts_hover(css = "fill:black;r:5pt;"))
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+

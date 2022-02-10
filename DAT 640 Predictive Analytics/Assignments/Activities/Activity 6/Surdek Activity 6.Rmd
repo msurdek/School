@@ -1,0 +1,39 @@
+---
+title: "Surdek Activity 6"
+author: "msurdek"
+date: "2/7/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(rattle)
+library(readr)
+library(arules)
+```
+
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+dvdtrans <- read_csv("~/R/x86_64-pc-linux-gnu-library/3.6/rattle/csv/dvdtrans.csv")
+```
+
+
+```{r}
+dvdDS <- new.env()
+dvdDS$data <- as(split(dvdtrans$Item, dvdtrans$ID), "transactions")
+dvdDS$data
+
+dvdAPRIORI <- new.env(parent = dvdDS)
+
+evalq({model <- apriori(data, parameter=list(support=0.2, confidence=0.1))}, dvdAPRIORI)
+
+inspect(sort(dvdAPRIORI$model, by = "confidence"))
+
+```
+

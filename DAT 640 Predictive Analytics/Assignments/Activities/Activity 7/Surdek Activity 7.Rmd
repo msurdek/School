@@ -10,34 +10,84 @@ knitr::opts_chunk$set(echo = TRUE)
 options(width = 100)
 ```
 
-
+## read packages
 
 ```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(readr)
 library(rattle)
 library(randomForest)
+library(rpart)
+library(caret)
 ```
 
-
 ```{r, message=FALSE, warnings=FALSE, results=FALSE}
-data(weather)
-weather
+boston <- read_csv("Hdma.csv") |> 
+  mutate(deny = as.factor(deny)) |> 
+  select(!...1)
+```
+
+```{r}
+bostonTREE <- new.env()
+
+evalq({
+  data <- boston
+  nobs <- nrow(data)
+  form <- formula(deny ~ .)
+  vars <- names(data)
+  set.seed(42)
+  train <- sample(nobs, .7 * nobs)
+  training <- data[train,]
+}, bostonTREE)
+
+bostonRPART <- new.env(parent = bostonTREE)
+
+evalq({
+  model <- rpart(formula = form, data = data[train, vars])
+}, bostonRPART)
 ```
 
 
 ```{r}
-weatherDS <- new.env()
+str(bostonRPART$model)
+
+print(bostonRPART$model)
+
+printcp(bostonRPART$model)
+
+summary(bostonRPART$model)
+
+opar <- par(xpd = TRUE)
+plot(bostonRPART$model)
+text(bostonRPART$model)
+par(opar)
+```
+
+
+```{r}
+bostonTREE$pred <- predict(bostonRPART$model, bostonTREE$training, type = "class")
+
+confusionMatrix(bostonTREE$pred, bostonTREE$training$deny)
+
+```
+
+## random forest
+
+```{r}
+bostonDS <- new.env()
 
 evalq({
-  data <- na.omit(weather)
+  data <- na.omit(boston)
   nobs <- nrow(data)
-  form <- formula(RainTomorrow ~ .)
+  form <- formula(deny ~ .)
   target <- all.vars(form)[1]
-  vars <- -grep('^(Date|Location|Risk)', names(data))
+  vars <- names(data)
   set.seed(42)
   train <- sample(nobs, .7 * nobs)
-}, weatherDS)
+  training <- data[train,]
+}, bostonDS)
 
-weatherRF <- new.env(parent = weatherDS)
+bostonRF <- new.env(parent = bostonDS)
 
 evalq({
   model <- randomForest(formula = form,
@@ -45,36 +95,46 @@ evalq({
                         ntree = 500, mtry = 4,
                         importance = TRUE,
                         localImp =TRUE,
-                        na.action = na.roughfix,
                         replace = FALSE)
-}, weatherRF)
+}, bostonRF)
+```
 
-str(weatherRF$model)
 
-head(weatherRF$model$predicted, 10)
+```{r}
+str(bostonRF$model)
 
-head(weatherRF$model$importance)
+head(bostonRF$model$predicted, 10)
 
-head(weatherRF$model$localImp)[,1:4]
+head(bostonRF$model$importance)
 
-weatherRF$model$err.rate
+data.frame(round(bostonRF$model$importance,4)) |> 
+  arrange(desc(MeanDecreaseAccuracy))
 
-round(head(weatherRF$model$err.rate, 15), 4)
+head(bostonRF$model$localImp)[,1:4]
+
+bostonRF$model$err.rate
+
+round(head(bostonRF$model$err.rate, 15), 4)
 
 evalq({
   min.err <- min(data.frame(model$err.rate)["OOB"])
   min.err.idx <- which(data.frame(model$err.rate)["OOB"] == min.err)
-}, weatherRF)
+}, bostonRF)
 
-weatherRF$min.err
+bostonRF$min.err
 
-weatherRF$min.err.idx
+bostonRF$min.err.idx
 
-weatherRF$model$err.rate[weatherRF$min.err.idx]
+bostonRF$model$err.rate[bostonRF$min.err.idx]
 
-head(weatherRF$model$votes)
+head(bostonRF$model$votes)
 
-head(apply(weatherRF$model$votes, 1, sum))
+head(apply(bostonRF$model$votes, 1, sum))
+
+plot(bostonRF$model)
+
+bostonDS$pred <- predict(bostonRF$model, bostonDS$training)
+
+confusionMatrix(bostonDS$pred, bostonDS$training$deny)
 
 ```
-

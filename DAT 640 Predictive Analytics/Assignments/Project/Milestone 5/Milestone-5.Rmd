@@ -1,0 +1,177 @@
+---
+title: "Milestone 4"
+author: "msurdek"
+date: "2/19/2022"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 500)
+```
+
+## load packages
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(readr)
+library(rpart)
+library(caret)
+library(ada)
+library(mlbench)
+library(MLmetrics)
+library(gbm)
+library(curl)
+library(MLeval)
+```
+
+```{r data, message=FALSE, warnings=FALSE, results=FALSE}
+coil <- read.delim(curl('https://raw.githubusercontent.com/msurdek/School/main/DAT%20640%20Predictive%20Analytics/Assignments/Project/Milestone%204/ticdata2000.txt'), header=FALSE)
+
+
+colnames(coil) <- c("MOSTYPE","MAANTHUI","MGEMOMV","MGEMLEEF","MOSHOOFD","MGODRK","MGODPR","MGODOV","MGODGE",
+                    "MRELGE","MRELSA","MRELOV","MFALLEEN","MFGEKIND","MFWEKIND","MOPLHOOG","MOPLMIDD",
+                    "MOPLLAAG","MBERHOOG","MBERZELF","MBERBOER","MBERMIDD","MBERARBG","MBERARBO","MSKA",
+                    "MSKB1","MSKB2","MSKC","MSKD","MHHUUR","MHKOOP","MAUT1","MAUT2","MAUT0","MZFONDS",
+                    "MZPART","MINKM30","MINK3045","MINK4575","MINK7512","MINK123M","MINKGEM","MKOOPKLA",
+                    "PWAPART","PWABEDR","PWALAND","PPERSAUT","PBESAUT","PMOTSCO","PVRAAUT","PAANHANG",
+                    "PTRACTOR","PWERKT","PBROM","PLEVEN","PPERSONG","PGEZONG","PWAOREG","PBRAND","PZEILPL",
+                    "PPLEZIER","PFIETS","PINBOED","PBYSTAND","AWAPART","AWABEDR","AWALAND","APERSAUT",
+                    "ABESAUT","AMOTSCO","AVRAAUT","AAANHANG","ATRACTOR","AWERKT","ABROM","ALEVEN","APERSONG",
+                    "AGEZONG","AWAOREG","ABRAND","AZEILPL","APLEZIER","AFIETS","AINBOED","ABYSTAND","CARAVAN")
+
+coil <- coil |> 
+  mutate(CARAVAN = factor(CARAVAN, labels = c("no","yes")))
+```
+
+
+```{r coil, message=FALSE, warnings=FALSE, results=FALSE}
+summary(coil)
+str(coil)
+```
+
+## ada
+
+```{r ada}
+coilDS <- new.env()
+
+evalq({
+  data <- coil
+  nobs <- nrow(data)
+  form <- formula(CARAVAN ~ .)
+  vars <- names(data)
+  set.seed(10)
+  train <- sample(nobs, .7 * nobs)
+  training <- data[train,]
+}, coilDS)
+
+coilADA <- new.env(parent = coilDS)
+
+evalq({
+  control <- rpart.control(max.depth = 30,
+                           cp = 0.010000,
+                           minsplit = 20,
+                           xval = 10)
+  model <- ada(formula = form,
+               data = data[train, vars],
+               control = control,
+               iter = 50)
+}, coilADA)
+
+coilADA$model
+
+summary(coilADA$model)
+```
+
+## gbm
+
+```{r gbm}
+#model <- gbm(CARAVAN ~ ., data = coil, shrinkage=0.01, distribution = 'bernoulli', cv.folds=5, n.trees=3000, verbose=F)
+
+#best.iter <- gbm.perf(model, method = "cv")
+
+#summary(model)
+
+#plot.gbm(model, 1, best.iter)
+
+#plot.gbm(model, 2, best.iter)
+
+#plot.gbm(model, 3, best.iter)
+```
+
+## caret
+
+```{r caret}
+fitControl <- trainControl(method="cv",
+                          number=5,
+                          returnResamp = "all",
+                          summaryFunction = twoClassSummary,
+                          classProbs = T,
+                          savePredictions = T)
+
+tuneControl <- data.frame(.n.trees=1000,
+                         .shrinkage=0.01,
+                         .interaction.depth=30,
+                         .n.minobsinnode=1)
+
+set.seed(10)
+
+model2 <- train(CARAVAN~.,
+               data=coil,
+               method="gbm",
+               distribution="bernoulli",
+               trControl=fitControl,
+               verbose=F,
+               tuneGrid=tuneControl)
+
+
+model2
+
+summary(model2)
+
+confusionMatrix(model2)
+
+pred <- predict(model2, coil, na.action = na.pass)
+
+confusionMatrix(pred, coil$CARAVAN)
+
+postResample(pred, coil$CARAVAN)
+
+coil |> 
+  group_by(CARAVAN) |> 
+  summarise(count = n())
+
+
+getTrainPerf(model2)
+
+results <- predict(model2, coil, na.action = na.pass, type = "prob")
+
+results$obs <- coil$CARAVAN
+
+head(results,50)
+
+mnLogLoss(results, lev = levels(results$obs))
+
+results$pred <- predict(model2, coil, na.action = na.pass)
+
+multiClassSummary(results, lev = levels(results$obs))
+
+evalResults <- data.frame(Class = coil$CARAVAN)
+evalResults$GBM <- predict(model2, coil, na.action = na.pass, type = "prob")[,2]
+head(evalResults)
+
+evalm(model2, gnames = "gbm")
+```
+
+
+
+
+
+
+
+
+
+```{r session}
+sessionInfo()
+```
+

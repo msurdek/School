@@ -1,0 +1,71 @@
+---
+title: "Surdek Milestone 2"
+author: "msurdek"
+date: "7/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+## read packages
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(readr)
+library(rpart)
+```
+
+```{r, message=FALSE, warnings=FALSE}
+cell_data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 650 Advanced Data Analytics/Assignments/Project//Data/Cell Data.csv") |> 
+  filter(CALIBRAT == 1) |> 
+  select(!c(CUSTOMER,CHURN))
+
+summary(cell_data)
+```
+
+```{r}
+cellTREE <- new.env()
+
+evalq({
+  data <- cell_data
+  nobs <- nrow(data)
+  form <- formula(CHURNDEP ~ .)
+  vars <- names(data)
+  set.seed(10)
+  train <- sample(nobs, .7 * nobs)
+  training <- data[train,]
+}, cellTREE)
+
+cellRPART <- new.env(parent = cellTREE)
+
+evalq({
+  model <- rpart(formula = form, data = data[train, vars])
+}, cellRPART)
+```
+
+
+```{r}
+str(cellRPART$model)
+
+print(cellRPART$model)
+
+printcp(cellRPART$model)
+
+summary(cellRPART$model)
+
+opar <- par(xpd = TRUE)
+plot(cellRPART$model)
+text(cellRPART$model)
+par(opar)
+```
+
+
+```{r}
+cellTREE$pred <- predict(cellRPART$model, cellTREE$training)
+
+#confusionMatrix(cellTREE$pred, cellTREE$training$CHURNDEP)
+
+```

@@ -35,6 +35,7 @@ cell_data |>
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
+
 ```{r}
 cell_data |> 
   mutate(CSA_main = substr(CSA,1,3)) |> 
@@ -44,7 +45,6 @@ cell_data |>
   ggplot(mapping = aes(x = reorder(CSA_main, -count), y = count, fill = churn)) +
   geom_bar(stat = "identity") +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
 ```
 
 ```{r}

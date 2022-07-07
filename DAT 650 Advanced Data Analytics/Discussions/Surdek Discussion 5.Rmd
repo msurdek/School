@@ -1,0 +1,80 @@
+---
+title: "Surdek Milestone 2"
+author: "msurdek"
+date: "7/2/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+## read packages
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(readr)
+library(rpart)
+```
+
+```{r, message=FALSE, warnings=FALSE}
+cell_data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 650 Advanced Data Analytics/Assignments/Project//Data/Cell Data.csv") |> 
+  filter(CALIBRAT == 1) |> 
+  select(!c(CUSTOMER,CHURN)) |> 
+  rename(PRZM_NUM = 'Column 45')
+
+summary(cell_data)
+
+cell_data |> 
+  group_by(CSA) |> 
+  summarize(count = n(), churn = mean(CHURNDEP)) |> 
+  filter(count > 5) |> 
+  ggplot(mapping = aes(x = reorder(CSA, -count), y = count, fill = churn)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+cell_data |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  group_by(CSA_main) |> 
+  summarize(count = n(), churn = mean(CHURNDEP)) |> 
+  filter(count > 5) |> 
+  ggplot(mapping = aes(x = reorder(CSA_main, -count), y = count, fill = churn)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+```{r}
+cell_data |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  group_by(CSA_main) |> 
+  summarize(count = n(), churn = mean(CHURNDEP), dropped = mean(DROPVCE)) |> 
+  ggplot(mapping = aes(x = dropped, y = churn, color = CSA_main)) +
+  geom_point()
+
+```
+
+
+
+```{r}
+cell_data |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  group_by(CSA_main) |>
+  summarize(count = n(), churn = mean(CHURNDEP), dropped = mean(DROPVCE), pct_dropped = mean(DROPVCE)/(mean(OUTCALLS)+mean(INCALLS))) |> 
+  ggplot(mapping = aes(x = pct_dropped, y = churn, color = CSA_main)) +
+  geom_point()
+
+```
+
+
+
+
+
+
+
+
+
+

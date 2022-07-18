@@ -1,0 +1,116 @@
+---
+title: "Surdek Milestone 3"
+author: "msurdek"
+date: "7/17/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 120)
+```
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(readr)
+library(randomForest)
+library(caret)
+library(scales)
+```
+
+```{r, message=FALSE, warnings=FALSE}
+data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 650 Advanced Data Analytics/Assignments/Project//Data/Cell Data.csv") |> 
+  filter(CALIBRAT == 1) |> 
+  mutate(CHURNDEP = as.factor(CHURNDEP)) |> 
+  rename(PRZM_NUM = 'Column 45') |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  na.omit()
+
+cell_data <- data |>
+  select(!c(CUSTOMER,CHURN)) |> 
+  select(!c(CREDITA, CREDITAA,  CREDITB, CREDITC, CREDITDE, CREDITGY, CREDITZ)) |> 
+  select(!c(PRIZMRUR, PRIZMUB, PRIZMTWN)) |> 
+  select(!c(OCCPROF, OCCCLER, OCCCRFT, OCCSTUD, OCCHMKR, OCCRET, OCCSELF, OCC)) |> 
+  select(!c(MARRYUN, MARRYYES, MARRYNO, MARRY))
+```
+
+```{r}
+cellDS <- new.env()
+
+evalq({
+  data <- na.omit(cell_data)
+  nobs <- nrow(data)
+  form <- formula(CHURNDEP ~ .)
+  target <- all.vars(form)[1]
+  vars <- names(data)
+  set.seed(10)
+  train <- sample(nobs, 1 * nobs)
+  training <- data[train,]
+}, cellDS)
+
+cellRF <- new.env(parent = cellDS)
+
+evalq({
+  model <- randomForest(formula = form,
+                        data = data[train, vars],
+                        ntree = 100, mtry = 6,
+                        importance = TRUE,
+                        localImp =TRUE,
+                        replace = FALSE)
+}, cellRF)
+```
+
+```{r}
+str(cellRF$model)
+
+cellRF$model
+
+head(cellRF$model$predicted, 10)
+
+head(cellRF$model$importance)
+
+data.frame(round(cellRF$model$importance,4)) |> 
+  arrange(desc(MeanDecreaseAccuracy))
+
+data.frame(round(cellRF$model$importance,4)) |> 
+  arrange(desc(MeanDecreaseGini))
+
+head(cellRF$model$localImp)[,1:4]
+
+cellRF$model$err.rate
+
+round(head(cellRF$model$err.rate, 15), 4)
+
+evalq({
+  min.err <- min(data.frame(model$err.rate)["OOB"])
+  min.err.idx <- which(data.frame(model$err.rate)["OOB"] == min.err)
+}, cellRF)
+
+cellRF$min.err
+
+cellRF$min.err.idx
+
+cellRF$model$err.rate[cellRF$min.err.idx]
+
+votes <- data.frame(cellRF$model$votes) |> 
+  cbind(data$CUSTOMER)|> 
+  select(c('data$CUSTOMER','X1'))
+
+colnames(votes) <- c('CUSTOMER_ID','CHURN_RISK')
+
+votes |>  
+  arrange(desc(CHURN_RISK))  |>
+  mutate(CHURN_RISK = label_percent(accuracy=1)(CHURN_RISK)) |> 
+  head(10) |> 
+  print(row.names = FALSE, quote = FALSE)
+
+head(apply(cellRF$model$votes, 1, sum))
+
+plot(cellRF$model)
+
+confusionMatrix(cellRF$model$predicted, cellDS$training$CHURNDEP)
+
+#cellDS$predval <- predict(cellRF$model, cellDS$validation)
+#confusionMatrix(cellDS$predval, cellDS$validation$CHURNDEP)
+
+```

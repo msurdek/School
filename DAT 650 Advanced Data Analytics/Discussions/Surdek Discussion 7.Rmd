@@ -1,0 +1,75 @@
+---
+title: "Surdek Milestone 3"
+author: "msurdek"
+date: "7/17/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(pastecs)
+library(moments)
+```
+
+```{r, message=FALSE, warnings=FALSE}
+data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 650 Advanced Data Analytics/Assignments/Project//Data/Cell Data.csv") |> 
+  filter(CALIBRAT == 1) |> 
+  mutate(CHURNDEP = as.factor(CHURNDEP)) |> 
+  rename(PRZM_NUM = 'Column 45') |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  na.omit()
+
+cell_data <- data |>
+  select(!c(CUSTOMER,CHURN)) |> 
+  select(!c(CREDITA, CREDITAA,  CREDITB, CREDITC, CREDITDE, CREDITGY, CREDITZ)) |> 
+  select(!c(PRIZMRUR, PRIZMUB, PRIZMTWN)) |> 
+  select(!c(OCCPROF, OCCCLER, OCCCRFT, OCCSTUD, OCCHMKR, OCCRET, OCCSELF, OCC)) |> 
+  select(!c(MARRYUN, MARRYYES, MARRYNO, MARRY))
+```
+
+```{r}
+summary(cell_data)
+mean(cell_data$CHANGEM)
+sd(cell_data$CHANGEM)
+str(cell_data$CHANGEM)
+stat.desc(cell_data$CHANGEM)
+skewness(cell_data$CHANGEM)
+kurtosis(cell_data$CHANGEM)
+
+cell_data |> 
+  ggplot(aes(x = CHANGEM, fill = CHURNDEP)) + 
+  geom_histogram(binwidth = 25) +
+  facet_wrap(vars(CHURNDEP), dir = 'v') +
+  theme_bw()
+
+cell_data |> 
+  ggplot(aes(x = CHANGEM)) + 
+  geom_density()
+
+cell_data |> 
+  ggplot(aes(x = CHANGEM)) + 
+  geom_boxplot()
+
+cell_data |> 
+  filter(CHANGEM < 50) |> 
+  mutate(total = n()) |> 
+  group_by(CHURNDEP) |> 
+  summarise(count = n(), total = mean(total), percent = round(count/total,2))
+
+cell_data |> 
+  filter(CHANGEM > 50) |> 
+  mutate(total = n()) |> 
+  group_by(CHURNDEP) |> 
+  summarise(count = n(), total = mean(total), percent = round(count/total,2))
+
+cell_data |> 
+  ggplot(aes(x = CHANGEM, y = CHURNDEP)) + 
+  geom_point()
+```

@@ -60,6 +60,16 @@ evalq({
 }, cellRF)
 ```
 
+
+model <- randomForest(formula = form,
+                      data = data[train, vars],
+                      ntree = 100, mtry = 6,
+                      importance = TRUE,
+                      localImp =TRUE,
+                      replace = FALSE)
+
+
+
 ```{r}
 str(cellRF$model)
 
@@ -100,7 +110,7 @@ colnames(votes) <- c('CUSTOMER_ID','CHURN_RISK')
 
 votes |>  
   arrange(desc(CHURN_RISK))  |>
-  mutate(CHURN_RISK = label_percent(accuracy=1)(CHURN_RISK)) |> 
+  mutate(CHURN_RISK = label_percent(accuracy=.01)(CHURN_RISK)) |> 
   head(10) |> 
   print(row.names = FALSE, quote = FALSE)
 

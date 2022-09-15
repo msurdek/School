@@ -103,8 +103,17 @@ cellRF$min.err.idx
 cellRF$model$err.rate[cellRF$min.err.idx]
 
 votes <- data.frame(cellRF$model$votes) |> 
+  cbind(data$CUSTOMER) |> 
+  head(10) |> 
+  print(row.names = FALSE, quote = FALSE)
+
+votes <- data.frame(cellRF$model$votes) |> 
   cbind(data$CUSTOMER)|> 
   select(c('data$CUSTOMER','X1'))
+
+votes |>  
+  head(10) |> 
+  print(row.names = FALSE, quote = FALSE)
 
 colnames(votes) <- c('CUSTOMER_ID','CHURN_RISK')
 

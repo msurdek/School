@@ -113,10 +113,19 @@ nrow(data_test)
 ```
 
 ```{r}
-model<- logistic_reg() %>%
+model1<- logistic_reg() %>%
         set_engine("glm") %>%
         set_mode("classification") %>%
         fit(CHURN~., data = data_train)
+
+model <- glm(CHURN ~.,family=binomial(link='logit'),data=data_train)
+
+#library(mctest)
+#imcdiag(model,method="VIF")
+
+library(car)
+#install.packages("car")
+vif(model)
 
 model_tidied <- tidy(model)
 model_tidied
@@ -132,13 +141,13 @@ model_tidied_odds %>%
 ## TRAINING DATA
 
 ```{r}
-pred_class <- predict(model,
+pred_class <- predict(model1,
                       new_data = data_train,
                       type = "class")
 
 pred_class[1:5,]
 
-pred_proba <- predict(model,
+pred_proba <- predict(model1,
                       new_data = data_train,
                       type = "prob")
 
@@ -180,13 +189,13 @@ pred_results %>%
 ## TESTING DATA
 
 ```{r}
-pred_class <- predict(model,
+pred_class <- predict(model1,
                       new_data = data_test,
                       type = "class")
 
 pred_class[1:5,]
 
-pred_proba <- predict(model,
+pred_proba <- predict(model1,
                       new_data = data_test,
                       type = "prob")
 

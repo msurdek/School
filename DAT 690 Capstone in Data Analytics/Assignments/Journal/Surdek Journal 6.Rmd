@@ -22,6 +22,8 @@ library(pastecs)
 library(moments)
 library(corrplot)
 library(car)
+library(janitor)
+library(caret)
 ```
 
 ## read data
@@ -73,15 +75,15 @@ qual_data
 dist_data <- churn_data |> 
   select(!c('CHURNDEP','CALIBRAT'))
 
-for(i in colnames(dist_data)) {
-  dist_df <- dist_data |>
-    select(c('CHURN',all_of(i))) |> 
-    na.omit()
-  plot <- dist_df |> 
-    ggplot(aes_string(x=names(dist_df)[2],color='CHURN')) +
-    geom_density()
-  print(plot)
-}
+# for(i in colnames(dist_data)) {
+#   dist_df <- dist_data |>
+#     select(c('CHURN',all_of(i))) |>
+#     na.omit()
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN')) +
+#     geom_density()
+#   print(plot)
+# }
 ```
 
 ## Data Sets
@@ -173,14 +175,35 @@ juice(pca_prep) %>%
 
 ```{r}
 set.seed(10)
-data_split <- initial_split(model_data, prop = 0.75, strata = CHURN)
 
-data_train <- data_split |> 
-  training() |> 
-  select(!CUSTOMER)
+model_data <- churn_data |> 
+  select(CUSTOMER,CHURN,REVENUE,MOU,RECCHRGE,MOUREC,PEAKVCE,CALLWAIT,MODELS,EQPDAYS,REFURB,WEBCAP,RETCALL,CSA_main) |> 
+  na.omit()
 
-data_test <- data_split |> 
-  testing()
+index <- createDataPartition(model_data$CHURN,p=0.75,list=FALSE)
+train <- model_data[index,]
+data_test_w_cust <- model_data[-index,]
+data_test <- data_test_w_cust |> select(!CUSTOMER)
+
+model_data |> tabyl(CHURN)
+
+# data_split <- initial_split(model_data, prop = 0.75, strata = CHURN)
+# 
+# train <- data_split |> 
+#   training() |> 
+#   select(!CUSTOMER)
+# 
+# train |> tabyl(CHURN)
+# 
+# data_test <- data_split |> 
+#   testing()
+# 
+# data_test |> tabyl(CHURN)
+
+data_train <- upSample(x = train, y = train$CHURN) |> 
+  select(!c(Class,CUSTOMER))
+
+data_train |> tabyl(CHURN)
 
 nrow(data_train)
 nrow(data_test)
@@ -206,6 +229,43 @@ model_tidied_odds %>%
   filter(p.value < 0.05)
 
 
+```
+
+## Single Variable Models
+
+```{r}
+single_model_data <- churn_data |> 
+  select(!c('CHURNDEP','CALIBRAT'))
+
+# for(i in colnames(single_model_data)) {
+#   set.seed(10)
+#   data_split <- initial_split(single_model_data, prop = 0.75, strata = CHURN)
+# 
+#   data_train <- data_split |> 
+#     training()
+# 
+#   data_test <- data_split |> 
+#     testing()
+#   
+#   single_model_df <- data_train |>
+#     select(c('CHURN',all_of(i))) |>
+#     na.omit()
+#   
+#   single_model <- logistic_reg() %>%
+#         set_engine("glm") %>%
+#         set_mode("classification") %>%
+#         fit(CHURN~., data = single_model_df)
+#   
+#   model_tidied_odds <- tidy(single_model, exponentiate = TRUE)
+#   
+#   print(i)
+#   
+#   #print(model_tidied_odds)
+# 
+#   print(model_tidied_odds %>%
+#           filter(term != '(Intercept)') |> 
+#           filter(p.value < 0.05))
+# }
 ```
 
 ## TRAINING DATA
@@ -236,7 +296,7 @@ conf_mat(pred_results, truth = CHURN,
 ```
 
 ```{r}
-custom_metrics <- metric_set(accuracy, sens, yardstick::spec, precision, recall, f_meas, kap, mcc)
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
 
 custom_metrics(pred_results,
                truth = CHURN,
@@ -271,8 +331,8 @@ pred_proba <- predict(model1,
 
 pred_proba[1:5,]
 
-pred_results <- data_test %>%
-  select(CUSTOMER,CHURN) %>%
+pred_results <- data_test_w_cust %>%
+  select(CUSTOMER, CHURN) %>%
   bind_cols(pred_class, pred_proba)
 
 pred_results[1:10, ]
@@ -284,7 +344,7 @@ conf_mat(pred_results, truth = CHURN,
 ```
 
 ```{r}
-custom_metrics <- metric_set(accuracy, sens, yardstick::spec, precision, recall, f_meas, kap, mcc)
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
 
 custom_metrics(pred_results,
                truth = CHURN,

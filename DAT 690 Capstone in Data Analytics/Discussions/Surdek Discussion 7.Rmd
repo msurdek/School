@@ -1,0 +1,829 @@
+---
+title: "Surdek Milestone Three"
+author: "msurdek"
+date: "9/22/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidymodels)
+library(recipes)
+library(forcats)
+library(tidytext)
+library(readr)
+library(pastecs)
+library(moments)
+library(corrplot)
+library(car)
+library(janitor)
+library(caret)
+library(themis)
+library(usmap)
+```
+
+## read data
+
+```{r}
+churn_data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Data.csv") |> 
+  select(!c(CALIBRAT,CHURNDEP)) |> 
+  mutate(CHURN = as.factor(CHURN)) |> 
+  rename(PRZM_NUM = 'Column 45') |> 
+  mutate(CSA_main = substr(CSA,1,3))
+
+summary(churn_data)
+
+# levels(as.factor(churn_data$MARRY_LABEL))
+# tabyl(churn_data$MARRY_LABEL)
+# tabyl(churn_data$MARRYYES)
+# tabyl(churn_data$MARRYNO)
+# tabyl(churn_data$MARRYUN)
+# churn_data <- churn_data |> 
+#   mutate(MARRYTOT = MARRYUN + MARRYNO + MARRYYES) |> 
+#   mutate(MARRY_LABEL = )
+# tabyl(churn_data$MARRYTOT)
+# churn_data |> tabyl(CHURN)
+```
+
+## Explore CSA Main
+
+```{r}
+churn_data$CSA_main |> tabyl() |> arrange(desc(percent))
+
+churn_data |> 
+  select(c(CSA,CSA_main,CHURN)) |> 
+  filter(CSA_main == 'SLC')
+
+csa_data <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Data.csv") |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  select(c(CUSTOMER,CHURN,CSA_main)) |> 
+  mutate(state = case_when(
+      CSA_main == 'NYC' ~ 'NY', 
+      CSA_main == 'LAX' ~ 'CA',
+      CSA_main == 'DAL' ~ 'TX', 
+      CSA_main == 'MIA' ~ 'FL', 
+      CSA_main == 'APC' ~ 'MD',
+      CSA_main == 'SFR' ~ 'CA', 
+      CSA_main == 'NEV' ~ 'NV',
+      CSA_main == 'SAN' ~ 'TX',
+      CSA_main == 'BOS' ~ 'MA',
+      CSA_main == 'DET' ~ 'MI',
+      CSA_main == 'CHI' ~ 'IL',
+      CSA_main == 'OHI' ~ 'OH',
+      CSA_main == 'FLN' ~ 'FL',
+      CSA_main == 'HOU' ~ 'TX',
+      CSA_main == 'PHI' ~ 'PA',
+      CSA_main == 'SEA' ~ 'WA',
+      CSA_main == 'ATL' ~ 'GA',
+      CSA_main == 'KCY' ~ 'MO',
+      CSA_main == 'NCR' ~ 'VA',
+      CSA_main == 'AIR' ~ 'NC',
+      CSA_main == 'HAR' ~ 'CT',
+      CSA_main == 'NNY' ~ 'NY',
+      CSA_main == 'STL' ~ 'MO',
+      CSA_main == 'DEN' ~ 'CO',
+      CSA_main == 'MIL' ~ 'WI',
+      CSA_main == 'MIN' ~ 'MN',
+      CSA_main == 'OMA' ~ 'NE',
+      CSA_main == 'LOU' ~ 'KY',
+      CSA_main == 'OKC' ~ 'OK',
+      CSA_main == 'IND' ~ 'IN',
+      CSA_main == 'NSH' ~ 'TN',
+      CSA_main == 'PHX' ~ 'AZ',
+      CSA_main == 'PIT' ~ 'PA',
+      CSA_main == 'HWI' ~ 'HI',
+      CSA_main == 'NMX' ~ 'NM',
+      CSA_main == 'NOL' ~ 'LA',
+      CSA_main == 'OHH' ~ 'OH',
+      CSA_main == 'AWI' ~ 'WI',
+      CSA_main == 'BIR' ~ 'AL',
+      CSA_main == 'LAU' ~ 'MS',
+      CSA_main == 'INH' ~ 'IN',
+      CSA_main == 'IPM' ~ 'MI',
+      CSA_main == 'SEW' ~ 'WA',
+      CSA_main == 'SHE' ~ 'MD',
+      CSA_main == 'SLC' ~ 'UT'))
+
+state_data <- csa_data |> 
+  group_by(state) |> 
+  summarize(count = n(), churn = sum(CHURN)) |> 
+  mutate(pct = churn / count)
+
+state_data |> 
+  filter(state == 'CO')
+
+state_data |> 
+  arrange(desc(pct))
+
+plot_usmap(data = state_data, values = "pct", color = "blue") + 
+  scale_fill_continuous(low = "white", high = "blue", name = "Churn PCT", label = scales::comma) + 
+  theme(legend.position = "right")
+
+#summary(csa_data)
+```
+
+## Exploring CSA (verification data)
+
+```{r}
+churn_data$CSA_main |> tabyl() |> arrange(desc(percent))
+
+churn_data |> 
+  select(c(CSA,CSA_main,CHURN)) |> 
+  filter(CSA_main == 'SLC')
+
+csa_data1 <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Verification Data.csv") |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  select(c(CUSTOMER,CHURN,CSA_main)) |> 
+  mutate(state = case_when(
+      CSA_main == 'NYC' ~ 'NY', 
+      CSA_main == 'LAX' ~ 'CA',
+      CSA_main == 'DAL' ~ 'TX', 
+      CSA_main == 'MIA' ~ 'FL', 
+      CSA_main == 'APC' ~ 'MD',
+      CSA_main == 'SFR' ~ 'CA', 
+      CSA_main == 'NEV' ~ 'NV',
+      CSA_main == 'SAN' ~ 'TX',
+      CSA_main == 'BOS' ~ 'MA',
+      CSA_main == 'DET' ~ 'MI',
+      CSA_main == 'CHI' ~ 'IL',
+      CSA_main == 'OHI' ~ 'OH',
+      CSA_main == 'FLN' ~ 'FL',
+      CSA_main == 'HOU' ~ 'TX',
+      CSA_main == 'PHI' ~ 'PA',
+      CSA_main == 'SEA' ~ 'WA',
+      CSA_main == 'ATL' ~ 'GA',
+      CSA_main == 'KCY' ~ 'MO',
+      CSA_main == 'NCR' ~ 'VA',
+      CSA_main == 'AIR' ~ 'NC',
+      CSA_main == 'HAR' ~ 'CT',
+      CSA_main == 'NNY' ~ 'NY',
+      CSA_main == 'STL' ~ 'MO',
+      CSA_main == 'DEN' ~ 'CO',
+      CSA_main == 'MIL' ~ 'WI',
+      CSA_main == 'MIN' ~ 'MN',
+      CSA_main == 'OMA' ~ 'NE',
+      CSA_main == 'LOU' ~ 'KY',
+      CSA_main == 'OKC' ~ 'OK',
+      CSA_main == 'IND' ~ 'IN',
+      CSA_main == 'NSH' ~ 'TN',
+      CSA_main == 'PHX' ~ 'AZ',
+      CSA_main == 'PIT' ~ 'PA',
+      CSA_main == 'HWI' ~ 'HI',
+      CSA_main == 'NMX' ~ 'NM',
+      CSA_main == 'NOL' ~ 'LA',
+      CSA_main == 'OHH' ~ 'OH',
+      CSA_main == 'AWI' ~ 'WI',
+      CSA_main == 'BIR' ~ 'AL',
+      CSA_main == 'LAU' ~ 'MS',
+      CSA_main == 'INH' ~ 'IN',
+      CSA_main == 'IPM' ~ 'MI',
+      CSA_main == 'SEW' ~ 'WA',
+      CSA_main == 'SHE' ~ 'MD',
+      CSA_main == 'SLC' ~ 'UT'))
+
+state_data1 <- csa_data1 |> 
+  group_by(state) |> 
+  summarize(count = n(), churn = sum(CHURN)) |> 
+  mutate(pct = churn / count)
+
+state_data1 |> 
+  filter(state == 'HI')
+
+state_data1 |> 
+  arrange(desc(pct))
+
+plot_usmap(data = state_data1, values = "pct", color = "blue") + 
+  scale_fill_continuous(low = "white", high = "blue", name = "Churn PCT", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+
+
+
+## Handle Missing Values
+
+```{r}
+revenue_median <- median(churn_data$REVENUE |> na.omit())
+minutes_median <- median(churn_data$MOU |> na.omit())
+recchrge_median <- median(churn_data$RECCHRGE |> na.omit())
+directas_median <- median(churn_data$DIRECTAS |> na.omit())
+overage_median <- median(churn_data$OVERAGE |> na.omit())
+roaming_median <- median(churn_data$ROAM |> na.omit())
+changem_zero <- 0
+changer_zero <- 0
+age1_median <- median(churn_data$AGE1 |> na.omit())
+age2_median <- median(churn_data$AGE2 |> na.omit())
+
+churn_data <- churn_data |> 
+  mutate(REVENUE = replace_na(REVENUE,revenue_median)) |> 
+  mutate(MOU = replace_na(MOU,minutes_median)) |> 
+  mutate(RECCHRGE = replace_na(RECCHRGE,recchrge_median)) |> 
+  mutate(DIRECTAS = replace_na(DIRECTAS,directas_median)) |> 
+  mutate(OVERAGE = replace_na(OVERAGE,overage_median)) |> 
+  mutate(ROAM = replace_na(ROAM,roaming_median)) |> 
+  mutate(CHANGEM = replace_na(CHANGEM,changem_zero)) |> 
+  mutate(CHANGER = replace_na(CHANGER,changer_zero)) |> 
+  mutate(AGE1 = replace_na(AGE1,age1_median)) |> 
+  mutate(AGE2 = replace_na(AGE2,age2_median))
+
+summary(churn_data)
+```
+
+## Variable Types
+
+```{r}
+#5
+id_vars <- c('CUSTOMER','OCC','MARRY')
+#1
+target_vars <- c('CHURN')
+#16
+usage_vars <- c('MOU','OVERAGE','ROAM','CHANGEM','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','CALLFWDV','CALLWAIT','NEWCELLY','NEWCELLN')
+#2
+coverage_vars <- c('DROPVCE','DROPBLK','BLCKVCE')
+#6
+sub_vars <- c('REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS')
+#9
+service_vars <- c('DIRECTAS','CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL')
+#7
+eq_vars <- c('PHONES','MODELS','EQPDAYS','REFURB','WEBCAP','SETPRCM','SETPRC')
+#4
+dem_vars_label <- c('CREDIT_RATING','PRZM_NUM','OCC_LABEL','MARRY_LABEL')
+#20
+dem_vars_dich <- c('CREDITA', 'CREDITAA', 'CREDITB', 'CREDITC', 'CREDITDE', 'CREDITGY', 'CREDITZ', 'PRIZMRUR', 'PRIZMUB', 'PRIZMTWN', 'OCCPROF', 'OCCCLER', 'OCCCRFT', 'OCCSTUD', 'OCCHMKR', 'OCCRET', 'OCCSELF', 'MARRYUN', 'MARRYYES', 'MARRYNO')
+#13
+dem_vars_other <- c('AGE1','AGE2','CHILDREN','TRUCK','RV','OWNRENT','TRAVEL','PCOWN','CREDITCD','INCMISS','INCOME','MCYCLE','CREDITAD')
+#2
+location_vars <- c('CSA','CSA_main')
+
+
+```
+
+## Data Sets
+
+```{r}
+data <- churn_data |>
+  select(c(target_vars,usage_vars,coverage_vars,sub_vars,service_vars,eq_vars,dem_vars_label,dem_vars_other)) |> 
+  na.omit()
+
+model_data <- churn_data |> 
+select(c('CUSTOMER',target_vars,usage_vars,'DROPVCE','DROPBLK','BLCKVCE',sub_vars,service_vars,eq_vars,dem_vars_label,dem_vars_other)) |> 
+  na.omit()
+
+all_data <- churn_data |>
+  select(c(target_vars,usage_vars,coverage_vars,sub_vars,service_vars,eq_vars,dem_vars_label,dem_vars_other))
+
+#summary(all_data)
+
+cor_data <- churn_data |>
+  select(c(usage_vars,coverage_vars,sub_vars,service_vars,eq_vars,dem_vars_dich,dem_vars_other)) |> 
+  na.omit()
+
+pca_data <- churn_data |>
+  select(c(id_vars,target_vars,usage_vars)) |> 
+  na.omit()
+```
+
+## read valdiation data
+
+```{r}
+data_test <- read_csv("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Verification Data.csv") |> 
+  mutate(CHURN = as.factor(CHURN)) |> 
+  rename(PRZM_NUM = 'Column 45') |> 
+  mutate(CSA_main = substr(CSA,1,3)) |> 
+  mutate(OCC_NPS = case_when(OCC_LABEL == 'NONE' | OCC_LABEL == 'STUDENT' |OCC_LABEL == 'PROFESSIONAL' ~ 1, OCC_LABEL == 'CLERICAL' | OCC_LABEL == 'CRAFT' |OCC_LABEL == 'HOMEMAKER' | OCC_LABEL == 'RETIRED' |OCC_LABEL == 'SELF-EMPLOYED' ~ 0))
+
+data_test <- data_test |> 
+  mutate(REVENUE = replace_na(REVENUE,revenue_median)) |> 
+  mutate(MOU = replace_na(MOU,minutes_median)) |> 
+  mutate(RECCHRGE = replace_na(RECCHRGE,recchrge_median)) |> 
+  mutate(DIRECTAS = replace_na(DIRECTAS,directas_median)) |> 
+  mutate(OVERAGE = replace_na(OVERAGE,overage_median)) |> 
+  mutate(ROAM = replace_na(ROAM,roaming_median)) |> 
+  mutate(CHANGEM = replace_na(CHANGEM,changem_zero)) |> 
+  mutate(CHANGER = replace_na(CHANGER,changer_zero)) |> 
+  mutate(AGE1 = replace_na(AGE1,age1_median)) |> 
+  mutate(AGE2 = replace_na(AGE2,age2_median))
+
+data_test |> tabyl(CHURN)
+churn_data |> tabyl(OCC_LABEL)
+# summary(data_test)
+```
+
+## Numeric & Categorical Variables
+
+```{r}
+target_vars <- c('CHURN')
+
+numeric_vars <- c('REVENUE','MOU','RECCHRGE','DIRECTAS','OVERAGE','ROAM','CHANGEM','CHANGER','DROPVCE','BLCKVCE','UNANSVCE','CUSTCARE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT','MONTHS','UNIQSUBS','ACTVSUBS','PHONES','MODELS','EQPDAYS','AGE1','AGE2','RETCALLS','RETACCPT','REFER','INCOME','CREDITAD','SETPRC')
+
+categorical_vars <- c('CSA_main','CHILDREN','CREDIT_RATING','PRZM_NUM','REFURB','WEBCAP','TRUCK','RV','OCC_LABEL','OWNRENT','MARRY_LABEL','MAILORD','MAILRES','MAILFLAG','TRAVEL','PCOWN','CREDITCD','NEWCELLY','NEWCELLN','MCYCLE','SETPRCM','RETCALL')
+
+numeric_df <- churn_data |> 
+  select(c(CHURN,all_of(numeric_vars)))
+
+numeric_df_test <- data_test |> 
+  select(c(CHURN,all_of(numeric_vars)))
+
+# for(i in colnames(numeric_df)) {
+#   dist_df <- numeric_df |>
+#     select(c('CHURN',all_of(i))) |> 
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |> 
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN')) +
+#     geom_density()
+#   print(plot)
+#   
+#   dist_df <- numeric_df_test |>
+#     select(c('CHURN',all_of(i))) |> 
+#     na.omit()
+#   plot <- dist_df |> 
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN')) +
+#     geom_density()
+#   print(plot)
+# }
+# 
+# categorical_df <- churn_data |> 
+#   select(c(CHURN,all_of(categorical_vars)))
+# 
+# categorical_df_test <- data_test |> 
+#   select(c(CHURN,all_of(categorical_vars)))
+# 
+# for(i in colnames(categorical_df)) {
+#   dist_df <- categorical_df |>
+#     select(c('CHURN',all_of(i))) |> 
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |> 
+#     ggplot(aes_string(x=names(dist_df)[2],fill='CHURN')) +
+#     geom_bar()
+#   print(plot)
+#   
+#   dist_df <- categorical_df_test |>
+#     select(c('CHURN',all_of(i))) |> 
+#     na.omit()
+#   plot <- dist_df |> 
+#     ggplot(aes_string(x=names(dist_df)[2],fill='CHURN')) +
+#     geom_bar()
+#   print(plot)
+# }
+
+for(i in colnames(numeric_df)) {
+  dist_df <- numeric_df |>
+    select(c('CHURN',all_of(i))) |>
+    na.omit()
+  print(i)
+  formula <- as.formula(paste(i, " ~ CHURN"))
+  if (i != 'CHURN') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+t.test(REVENUE ~ CHURN, numeric_df)
+```
+
+## Working Model Data
+
+```{r}
+churn_data <- churn_data |> 
+  mutate(OCC_NPS = case_when(OCC_LABEL == 'NONE' | OCC_LABEL == 'STUDENT' |OCC_LABEL == 'PROFESSIONAL' ~ 1, OCC_LABEL == 'CLERICAL' | OCC_LABEL == 'CRAFT' |OCC_LABEL == 'HOMEMAKER' | OCC_LABEL == 'RETIRED' |OCC_LABEL == 'SELF-EMPLOYED' ~ 0))
+
+model_vars <- c('CUSTOMER','CHURN','MOU','MOUREC','OUTCALLS','DIRECTAS','CHANGEM','PEAKVCE','CALLWAIT','OPEAKVCE','REVENUE','RECCHRGE','DROPBLK','UNANSVCE','ACTVSUBS','MAILRES','RETCALLS','EQPDAYS','REFURB','OCC_LABEL','MARRYYES','MARRYNO','MARRYUN')
+
+model_vars <- c('CUSTOMER','CHURN','MOU','OPEAKVCE','REVENUE','DROPBLK','MAILRES','RETCALLS','EQPDAYS','REFURB')
+
+#model_vars <- c('CUSTOMER','CHURN','CSA_main')
+
+churn_data$CSA_main |> tabyl() |> arrange(desc(percent))
+
+working_model_data <- churn_data |>
+  select(all_of(model_vars))
+```
+
+## Logistic Regression Model
+
+```{r}
+set.seed(10)
+
+# model_data <- churn_data |> 
+#   select(CUSTOMER,CHURN,REVENUE,MOU,RECCHRGE,MOUREC,PEAKVCE,CALLWAIT,MODELS,EQPDAYS,REFURB,WEBCAP,RETCALL,CSA_main) |> 
+#   na.omit()
+
+first_model_data <- working_model_data |> select(!CUSTOMER)
+index <- createDataPartition(first_model_data$CHURN,p=0.75,list=FALSE)
+train <- first_model_data[index,]
+data_test_w_cust <- first_model_data[-index,]
+#data_test <- data_test_w_cust |> select(!CUSTOMER)
+
+first_model_data |> tabyl(CHURN)
+
+# data_split <- initial_split(model_data, prop = 0.75, strata = CHURN)
+# 
+# train <- data_split |> 
+#   training() |> 
+#   select(!CUSTOMER)
+# 
+# train |> tabyl(CHURN)
+# 
+# data_test <- data_split |> 
+#   testing()
+# 
+# data_test |> tabyl(CHURN)
+
+# data_train <- upSample(x = train, y = train$CHURN) |> 
+#   select(!c(Class,CUSTOMER))
+# 
+# data_train <- upSample(x = train, y = train$CHURN) |> 
+#   select(!Class)
+# 
+# data_train$X <- sample(rep(c(0, 1), nrow(data_train) / 2))
+
+# data_train <- data_train |> 
+#   distinct(CUSTOMER, X, .keep_all=TRUE) |> 
+#   select(!c(CUSTOMER, X))
+
+#train <- model_data |> select(!CUSTOMER)
+data_train <- train
+
+data_train |> tabyl(CHURN)
+
+nrow(data_train)
+nrow(data_test)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+# str(model1)
+
+#model <- glm(CHURN ~.,family=binomial(link='logit'),data=data_train)
+
+#vif(model)
+
+model_tidied <- tidy(model1)
+print(model_tidied,n=61)
+
+model_tidied_odds <- tidy(model1, exponentiate = TRUE)
+print(model_tidied_odds,n=61)
+
+model_tidied_odds %>%
+  filter(p.value < 0.2) |> 
+  arrange(p.value)
+
+
+```
+
+## VALIDATION DATA
+
+### with full original data set
+
+```{r}
+train <- working_model_data |> select(!CUSTOMER)
+data_train <- train
+
+data_train |> tabyl(CHURN)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+pred_class <- predict(model1,
+                      new_data = data_test,
+                      type = "class")
+
+# pred_class[1:5,]
+
+pred_proba <- predict(model1,
+                      new_data = data_test,
+                      type = "prob")
+
+# pred_proba[1:5,]
+
+pred_results <- data_test %>%
+  select(CUSTOMER, CHURN) %>%
+  bind_cols(pred_class, pred_proba)
+
+pred_results |> 
+  filter(.pred_1 >= 0.6)
+# pred_results[1:10, ]
+
+conf_mat(pred_results, truth = CHURN,
+         estimate = .pred_class)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN,
+               estimate = .pred_class)
+
+# roc_auc(pred_results,
+#         truth = CHURN,
+#         .pred_0)
+# 
+# pred_results %>%
+#   roc_curve(truth = CHURN, .pred_0) %>%
+#   autoplot()
+```
+
+
+### with full downsampled to 50/50 data set
+
+```{r}
+train <- working_model_data
+
+train_yes = train |> 
+  filter(CHURN == 1)
+
+train_no = train |> 
+  filter(CHURN == 0)
+
+data_train_no = train_no[sample(nrow(train_no), nrow(train_no)*.5), ]
+
+data_train = data_train_no |> 
+  rbind(train_yes)
+
+# data_train <- downSample(x = train, y = train$CHURN) |> 
+#   select(!c(Class,CUSTOMER))
+
+data_train |> tabyl(CHURN)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+pred_class <- predict(model1,
+                      new_data = data_test,
+                      type = "class")
+
+# pred_class[1:5,]
+
+pred_proba <- predict(model1,
+                      new_data = data_test,
+                      type = "prob")
+
+# pred_proba[1:5,]
+
+pred_results <- data_test %>%
+  select(CUSTOMER, CHURN) %>%
+  bind_cols(pred_class, pred_proba)
+
+# pred_results[1:10, ]
+
+conf_mat(pred_results, truth = CHURN,
+         estimate = .pred_class)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN,
+               estimate = .pred_class)
+
+# roc_auc(pred_results,
+#         truth = CHURN,
+#         .pred_0)
+# 
+# pred_results %>%
+#   roc_curve(truth = CHURN, .pred_0) %>%
+#   autoplot()
+```
+
+
+### with full upsampled to 60/40 data set
+
+```{r}
+train <- working_model_data
+
+data_train1 <- upSample(x = train, y = train$CHURN) |> 
+  select(!Class)
+
+data_train1$X <- sample(rep(c(0, 1), nrow(data_train1) / 2))
+
+data_train1 <- data_train1 |> 
+  distinct(CUSTOMER, X, .keep_all=TRUE) |> 
+  select(!X)
+
+data_train <- downSample(x = data_train1, y = data_train1$CHURN) |> 
+  select(!c(Class,CUSTOMER))
+
+data_train |> tabyl(CHURN)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+pred_class <- predict(model1,
+                      new_data = data_test,
+                      type = "class")
+
+# pred_class[1:5,]
+
+pred_proba <- predict(model1,
+                      new_data = data_test,
+                      type = "prob")
+
+# pred_proba[1:5,]
+
+pred_results <- data_test %>%
+  select(CUSTOMER, CHURN) %>%
+  bind_cols(pred_class, pred_proba)
+
+# pred_results[1:10, ]
+
+conf_mat(pred_results, truth = CHURN,
+         estimate = .pred_class)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN,
+               estimate = .pred_class)
+
+roc_auc(pred_results,
+        truth = CHURN,
+        .pred_0)
+
+pred_results %>%
+  roc_curve(truth = CHURN, .pred_0) %>%
+  autoplot()
+```
+
+### with full upsampled to 55/45 data set
+
+```{r}
+train <- working_model_data
+
+data_train <- upSample(x = train, y = train$CHURN) |> 
+  select(!Class)
+
+data_train$X <- sample(rep(c(0, 1, 2, 3), nrow(data_train) / 4))
+
+data_train <- data_train |> 
+  distinct(CUSTOMER, X, .keep_all=TRUE) |> 
+  select(!c(CUSTOMER, X))
+
+data_train |> tabyl(CHURN)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+pred_class <- predict(model1,
+                      new_data = data_test,
+                      type = "class")
+
+# pred_class[1:5,]
+
+pred_proba <- predict(model1,
+                      new_data = data_test,
+                      type = "prob")
+
+# pred_proba[1:5,]
+
+pred_results <- data_test %>%
+  select(CUSTOMER, CHURN) %>%
+  bind_cols(pred_class, pred_proba)
+
+# pred_results[1:10, ]
+
+conf_mat(pred_results, truth = CHURN,
+         estimate = .pred_class)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN,
+               estimate = .pred_class)
+
+roc_auc(pred_results,
+        truth = CHURN,
+        .pred_0)
+
+pred_results %>%
+  roc_curve(truth = CHURN, .pred_0) %>%
+  autoplot()
+```
+
+### with full upsampled to 50/50 data set
+
+```{r}
+train <- working_model_data
+
+data_train <- upSample(x = train, y = train$CHURN) |> 
+  select(!c(Class,CUSTOMER))
+
+data_train |> tabyl(CHURN)
+
+model1<- logistic_reg() |> 
+        set_engine("glm") |> 
+        set_mode("classification") |> 
+        fit(CHURN~., data = data_train)
+
+pred_class <- predict(model1,
+                      new_data = data_test,
+                      type = "class")
+
+# pred_class[1:5,]
+
+pred_proba <- predict(model1,
+                      new_data = data_test,
+                      type = "prob")
+
+# pred_proba[1:5,]
+
+pred_results <- data_test %>%
+  select(CUSTOMER, CHURN) %>%
+  bind_cols(pred_class, pred_proba)
+
+# pred_results[1:10, ]
+
+conf_mat(pred_results, truth = CHURN,
+         estimate = .pred_class)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN,
+               estimate = .pred_class)
+
+# roc_auc(pred_results,
+#         truth = CHURN,
+#         .pred_0)
+# 
+# pred_results %>%
+#   roc_curve(truth = CHURN, .pred_0) %>%
+#   autoplot()
+```
+
+## Single Variable Models
+
+```{r}
+single_model_data <- working_model_data
+
+for(i in colnames(single_model_data)) {
+  single_model_df <- single_model_data |>
+    select(c('CHURN',all_of(i))) |>
+    na.omit()
+
+  single_model <- logistic_reg() %>%
+        set_engine("glm") %>%
+        set_mode("classification") %>%
+        fit(CHURN~., data = single_model_df)
+
+  model_tidied_odds <- tidy(single_model, exponentiate = TRUE)
+
+  print(i)
+
+  #print(model_tidied_odds)
+
+  print(model_tidied_odds |> 
+          filter(term != '(Intercept)'))
+  
+  pred_class <- predict(single_model,
+                      new_data = data_test,
+                      type = "class")
+
+  # pred_class[1:5,]
+
+  pred_proba <- predict(single_model,
+                      new_data = data_test,
+                      type = "prob")
+
+  # pred_proba[1:5,]
+
+  pred_results <- data_test %>%
+    select(CUSTOMER, CHURN) %>%
+    bind_cols(pred_class, pred_proba)
+
+  # pred_results[1:10, ]
+
+  print(conf_mat(pred_results, truth = CHURN,
+                 estimate = .pred_class))
+
+  custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+  print(custom_metrics(pred_results,
+                       truth = CHURN,
+                       estimate = .pred_class))
+}
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,191 @@
+## 1) load required packages and data pre-processing functions
+
+library(readr)
+library(dplyr)
+library(tidymodels)
+library(caret)
+library(glmnet)
+library(corrplot)
+library(car)
+source("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Programming Revision/Churn Data Pre-Processing Functions.R")
+
+
+
+## 2) read data files
+
+# training data
+data_churn <- read_churn_file("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Data.csv")
+
+# testing data
+data_churn_test <- read_churn_file("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Verification Data.csv")
+
+
+
+## 3) handle missing data
+
+
+# convert zeros to in NAs in columns where that is how they are stored
+data_churn <- data_churn |> 
+  zeros_to_nas()
+
+# calculate new values that will be imputed
+revenue_median <- median(data_churn$REVENUE |> na.omit())
+minutes_median <- median(data_churn$MOU |> na.omit())
+recchrge_median <- median(data_churn$RECCHRGE |> na.omit())
+directas_median <- median(data_churn$DIRECTAS |> na.omit())
+overage_median <- median(data_churn$OVERAGE |> na.omit())
+roaming_median <- median(data_churn$ROAM |> na.omit())
+changem_zero <- 0
+changer_zero <- 0
+age1_median <- median(data_churn$AGE1 |> na.omit())
+age2_median <- median(data_churn$AGE2 |> na.omit())
+income_median <- median(data_churn$INCOME |> na.omit())
+setprice_median <- median(data_churn$SETPRC |> na.omit())
+  
+# impute missing values into training and testing data
+data_churn <- data_churn |> 
+  impute_values()
+
+data_churn_test <- data_churn_test |> 
+  zeros_to_nas() |> 
+  impute_values()
+
+
+
+## 4) add derived features
+
+data_churn <- data_churn |> 
+  get_attributes() |> 
+  get_csa_info()
+
+data_churn_test <- data_churn_test |> 
+  get_attributes() |> 
+  get_csa_info()
+
+
+
+## 5) principal component analysis of some usage/subscription fields
+
+# select data for pca
+usage_pca_vars <- c('DIRECTAS','OVERAGE','ROAM','CALLFWDV','REVENUE','RECCHRGE')
+
+usage_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
+
+# create pca recipe
+usage_pca_rec <- recipe(~., data = usage_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+# train pca
+usage_pca_prep <- prep(usage_pca_rec)
+
+# generate pca values for training and testing data
+usage_pca_values <- juice(usage_pca_prep) |> 
+  rename(USAGEPC2 = "PC2") |> 
+  select('CUSTOMER','USAGEPC2')
+
+usage_pca_values_test <- bake(usage_pca_prep, data_churn_test) |> 
+  rename(USAGEPC2 = "PC2") |> 
+  select('CUSTOMER','USAGEPC2')
+
+data_churn <- data_churn |> 
+  left_join(usage_pca_values, by = 'CUSTOMER')
+
+data_churn_test <- data_churn_test |> 
+  left_join(usage_pca_values_test, by = 'CUSTOMER')
+
+
+
+## 6) model variables
+
+# select data for model
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU_low','CHANGEM','USAGEPC2','RETCALL','CSA_region_SEW','CSA_region_NS','PRIZMTWN','TRAVEL','CHILDREN','CREDITDEGY')
+
+working_model_data <- data_churn |>
+  select(all_of(model_vars)) |> 
+  select(!CUSTOMER)
+
+
+
+## 7) correlation & model for collinearity
+
+# analyze correlation between predictors and VIF values of model inputs
+pairs_data <- working_model_data |> select(!c('CHURN_TARGET'))
+
+res <- pairs_data |> cor()
+
+corrplot(res, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+
+model <- glm(CHURN_TARGET ~.,family=binomial(link='logit'),data=working_model_data)
+
+vif(model)
+
+
+
+## 8) Regularized Logistic Regression Model
+
+set.seed(10)
+
+train <- data_churn |>
+  select(all_of(model_vars))
+
+# upsample data to 50/50 churn&no-churn split
+train <- upSample(x = train, y = train$CHURN_TARGET) |>
+  select(!Class)
+
+# remove some duplicate churn observations - createsa 45/55 percent split
+train$X <- sample(rep(c(0, 1, 2, 3), nrow(train) / 4))
+
+train <- train |>
+  distinct(CUSTOMER, X, .keep_all=TRUE) |>
+  select(!c(X,CUSTOMER))
+
+# create model training matrices
+data_train_x <- model.matrix(CHURN_TARGET~., train)[,-1]
+data_train_y <- as.integer(train$CHURN_TARGET)
+
+# determine optimal ratio of ridge/lasso regression through cross validation
+cv.lasso <- cv.glmnet(data_train_x, data_train_y, alpha = 1, family = "binomial")
+
+# train glm model
+model1 <- glmnet(data_train_x, data_train_y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+
+# print input coefficients
+coef(model1)
+
+
+
+## 9) model evaluation
+
+# select fields for model evaluation from testing data
+data_test <- data_churn_test |>
+  select(all_of(model_vars)) |> 
+  select(!CUSTOMER)
+
+x.test <- model.matrix(CHURN_TARGET ~., data_test)[,-1]
+
+# apply model to testing data
+probabilities <- model1 |> 
+  predict(newx = x.test,type="response")
+
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+
+pred_results <- data_test |> 
+  select(CHURN_TARGET) |> 
+  bind_cols(predicted.classes) |> 
+  mutate(predicted = as.factor(s0)) |> 
+  select(CHURN_TARGET,predicted) |> 
+  bind_cols(probabilities) |>
+  rename(prob1 = 's0') |> 
+  mutate(prob0 = 1 - prob1)
+
+# confusion matrix of predicted v actual
+conf_mat(pred_results, truth = CHURN_TARGET, estimate = predicted)
+
+# other evaluation metrics - accuracy, sensitivity, etc.
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results, truth = CHURN_TARGET, estimate = predicted)

@@ -1,0 +1,148 @@
+# 1) function to read original data files and perform some basic data cleaning
+
+read_churn_file <- function(path) {
+  data <- read_csv(path) |> 
+    rename(PRZM_NUM = 'Column 45') |> 
+    mutate(CHURN_TARGET = as.factor(CHURN)) |> 
+    mutate(CHURN_INT = CHURN) |> 
+    mutate(MARRY_LABEL = case_when (MARRYYES == 1 ~ 'YES', MARRYNO == 1 ~ 'NO',MARRYUN == 1 ~ 'UNKNOWN')) |> 
+    mutate(PRIZM_LABEL = case_when(PRIZMRUR == 1 ~ 'RURAL', PRIZMUB == 1 ~ 'URBAN', PRIZMTWN == 1 | PRZM_NUM == 3 ~ 'TOWN', TRUE ~ 'UNKNOWN')) |> 
+    mutate(CREDIT_LABEL = case_when(CREDITA == 1 ~ 'A', CREDITAA == 1 ~ 'AA', CREDITB == 1 ~ 'B', CREDITC == 1 ~ 'C', CREDITDE == 1 ~ 'DE', CREDITGY == 1 ~ 'GY', CREDITZ == 1 ~ 'Z')) |> 
+    select(!c(CALIBRAT, CHURNDEP, CHURN))
+}
+
+# 2) function to convert zeros to NAs for certain columns
+
+zeros_to_nas <- function(df) {
+  df |> 
+    mutate_at(c('AGE1'), ~na_if(., 0)) |> 
+    mutate_at(c('AGE2'), ~na_if(., 0)) |> 
+    mutate_at(c('INCOME'), ~na_if(., 0)) |> 
+    mutate_at(c('SETPRC'), ~na_if(., 0))
+}
+
+# 3) function to impute missing values with calculated values
+
+impute_values <- function(df) {
+  df |> 
+    mutate(REVENUE = replace_na(REVENUE,revenue_median)) |> 
+    mutate(MOU = replace_na(MOU,minutes_median)) |> 
+    mutate(RECCHRGE = replace_na(RECCHRGE,recchrge_median)) |> 
+    mutate(DIRECTAS = replace_na(DIRECTAS,directas_median)) |> 
+    mutate(OVERAGE = replace_na(OVERAGE,overage_median)) |> 
+    mutate(ROAM = replace_na(ROAM,roaming_median)) |> 
+    mutate(CHANGEM = replace_na(CHANGEM,changem_zero)) |> 
+    mutate(CHANGER = replace_na(CHANGER,changer_zero)) |> 
+    mutate(AGE1 = replace_na(AGE1,age1_median)) |> 
+    mutate(AGE2 = replace_na(AGE2,age2_median)) |> 
+    mutate(INCOME = replace_na(INCOME,income_median)) |> 
+    mutate(SETPRC = replace_na(SETPRC,setprice_median))
+}
+
+# 4) derive attributes from minutes of use, change in minutes, and credit ratings
+
+get_attributes <- function(df) {
+  df |>
+    mutate(CHANGEM_mod = case_when(CHANGEM >= 100 & CHANGEM <= 300 ~ 1, TRUE ~ 0)) |> 
+    mutate(CREDITDEGY = case_when(CREDIT_LABEL == 'DE' | CREDIT_LABEL == 'GY' ~ 1, TRUE ~ 0)) |> 
+    mutate(MOU_low = case_when(MOU <= 220 ~ 1, TRUE ~ 0))
+}
+
+# 5) get metropolitan area, state, and region from Communications Service Area (CSA) field
+
+get_csa_info <- function(df) {
+  df |> 
+    mutate(CSA_main = substr(CSA,1,3)) |> 
+    mutate(CSA_state = case_when(
+      CSA_main == 'NYC' ~ 'NY', 
+      CSA_main == 'LAX' ~ 'CA',
+      CSA_main == 'DAL' ~ 'TX', 
+      CSA_main == 'MIA' ~ 'FL', 
+      CSA_main == 'APC' ~ 'MD',
+      CSA_main == 'SFR' ~ 'CA', 
+      CSA_main == 'NEV' ~ 'NV',
+      CSA_main == 'SAN' ~ 'TX',
+      CSA_main == 'BOS' ~ 'MA',
+      CSA_main == 'DET' ~ 'MI',
+      CSA_main == 'CHI' ~ 'IL',
+      CSA_main == 'OHI' ~ 'OH',
+      CSA_main == 'FLN' ~ 'FL',
+      CSA_main == 'HOU' ~ 'TX',
+      CSA_main == 'PHI' ~ 'PA',
+      CSA_main == 'SEA' ~ 'WA',
+      CSA_main == 'ATL' ~ 'GA',
+      CSA_main == 'KCY' ~ 'MO',
+      CSA_main == 'NCR' ~ 'VA',
+      CSA_main == 'AIR' ~ 'NC',
+      CSA_main == 'HAR' ~ 'CT',
+      CSA_main == 'NNY' ~ 'NY',
+      CSA_main == 'STL' ~ 'MO',
+      CSA_main == 'DEN' ~ 'CO',
+      CSA_main == 'MIL' ~ 'WI',
+      CSA_main == 'MIN' ~ 'MN',
+      CSA_main == 'OMA' ~ 'NE',
+      CSA_main == 'LOU' ~ 'KY',
+      CSA_main == 'OKC' ~ 'OK',
+      CSA_main == 'IND' ~ 'IN',
+      CSA_main == 'NSH' ~ 'TN',
+      CSA_main == 'PHX' ~ 'AZ',
+      CSA_main == 'PIT' ~ 'PA',
+      CSA_main == 'HWI' ~ 'HI',
+      CSA_main == 'NMX' ~ 'NM',
+      CSA_main == 'NOL' ~ 'LA',
+      CSA_main == 'OHH' ~ 'OH',
+      CSA_main == 'AWI' ~ 'WI',
+      CSA_main == 'BIR' ~ 'AL',
+      CSA_main == 'LAU' ~ 'MS',
+      CSA_main == 'INH' ~ 'IN',
+      CSA_main == 'IPM' ~ 'MI',
+      CSA_main == 'SEW' ~ 'WA',
+      CSA_main == 'SHE' ~ 'MD',
+      CSA_main == 'SLC' ~ 'UT')) |> 
+    mutate(CSA_region = case_when(
+      CSA_state == 'AL' ~ 'Southeast', 
+      CSA_state == 'AZ' ~ 'Southwest',
+      CSA_state == 'CA' ~ 'West', 
+      CSA_state == 'CO' ~ 'West', 
+      CSA_state == 'CT' ~ 'Northeast', 
+      CSA_state == 'FL' ~ 'Southeast',
+      CSA_state == 'GA' ~ 'Southeast', 
+      CSA_state == 'HI' ~ 'West', 
+      CSA_state == 'IL' ~ 'Midwest',
+      CSA_state == 'IN' ~ 'Midwest',
+      CSA_state == 'KY' ~ 'Midwest', 
+      CSA_state == 'LA' ~ 'South', 
+      CSA_state == 'MA' ~ 'Northeast',
+      CSA_state == 'MD' ~ 'East', 
+      CSA_state == 'MI' ~ 'North',
+      CSA_state == 'MN' ~ 'North', 
+      CSA_state == 'MO' ~ 'Midwest',
+      CSA_state == 'MS' ~ 'South', 
+      CSA_state == 'NC' ~ 'East', 
+      CSA_state == 'NE' ~ 'Midwest',
+      CSA_state == 'NM' ~ 'Southwest', 
+      CSA_state == 'NV' ~ 'West', 
+      CSA_state == 'NY' ~ 'Northeast',
+      CSA_state == 'OH' ~ 'Midwest', 
+      CSA_state == 'OK' ~ 'South',
+      CSA_state == 'PA' ~ 'East',
+      CSA_state == 'TN' ~ 'Midwest',
+      CSA_state == 'TX' ~ 'South',
+      CSA_state == 'UT' ~ 'West',
+      CSA_state == 'VA' ~ 'East',
+      CSA_state == 'WA' ~ 'Northwest',
+      CSA_state == 'WI' ~ 'North')) |> 
+    mutate(CSA_region_SEW = case_when(
+      CSA_region == 'Southeast' ~ 1, 
+      CSA_region == 'East' ~ 1,
+      CSA_region == 'West' ~ 1, 
+      CSA_region == 'Southwest' ~ 1, 
+      TRUE ~ 0)) |> 
+    mutate(CSA_region_SW = case_when(
+      CSA_region == 'Southwest' ~ 1, 
+      TRUE ~ 0)) |> 
+    mutate(CSA_region_NS = case_when(
+      CSA_region == 'North' ~ 1,
+      CSA_region == 'South' ~ 1,
+      TRUE ~ 0))
+}

@@ -1,0 +1,1388 @@
+---
+title: "Surdek Milestone Three"
+author: "msurdek"
+date: "9/22/2022"
+output: html_document
+---
+## markdown setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
+```
+
+## load required packages
+
+```{r, message=FALSE, warnings=FALSE, results=FALSE, include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidymodels)
+library(recipes)
+library(forcats)
+library(tidytext)
+library(readr)
+library(pastecs)
+library(moments)
+library(corrplot)
+library(car)
+library(janitor)
+library(caret)
+library(glmnet)
+library(themis)
+library(usmap)
+```
+
+## FUNCTION get csa info
+
+```{r, include = FALSE}
+get_csa_info <- function(df) {
+  
+  df |> 
+    
+    mutate(CSA_main = substr(CSA,1,3)) |> 
+    
+    mutate(CSA_state = case_when(
+      CSA_main == 'NYC' ~ 'NY', 
+      CSA_main == 'LAX' ~ 'CA',
+      CSA_main == 'DAL' ~ 'TX', 
+      CSA_main == 'MIA' ~ 'FL', 
+      CSA_main == 'APC' ~ 'MD',
+      CSA_main == 'SFR' ~ 'CA', 
+      CSA_main == 'NEV' ~ 'NV',
+      CSA_main == 'SAN' ~ 'TX',
+      CSA_main == 'BOS' ~ 'MA',
+      CSA_main == 'DET' ~ 'MI',
+      CSA_main == 'CHI' ~ 'IL',
+      CSA_main == 'OHI' ~ 'OH',
+      CSA_main == 'FLN' ~ 'FL',
+      CSA_main == 'HOU' ~ 'TX',
+      CSA_main == 'PHI' ~ 'PA',
+      CSA_main == 'SEA' ~ 'WA',
+      CSA_main == 'ATL' ~ 'GA',
+      CSA_main == 'KCY' ~ 'MO',
+      CSA_main == 'NCR' ~ 'VA',
+      CSA_main == 'AIR' ~ 'NC',
+      CSA_main == 'HAR' ~ 'CT',
+      CSA_main == 'NNY' ~ 'NY',
+      CSA_main == 'STL' ~ 'MO',
+      CSA_main == 'DEN' ~ 'CO',
+      CSA_main == 'MIL' ~ 'WI',
+      CSA_main == 'MIN' ~ 'MN',
+      CSA_main == 'OMA' ~ 'NE',
+      CSA_main == 'LOU' ~ 'KY',
+      CSA_main == 'OKC' ~ 'OK',
+      CSA_main == 'IND' ~ 'IN',
+      CSA_main == 'NSH' ~ 'TN',
+      CSA_main == 'PHX' ~ 'AZ',
+      CSA_main == 'PIT' ~ 'PA',
+      CSA_main == 'HWI' ~ 'HI',
+      CSA_main == 'NMX' ~ 'NM',
+      CSA_main == 'NOL' ~ 'LA',
+      CSA_main == 'OHH' ~ 'OH',
+      CSA_main == 'AWI' ~ 'WI',
+      CSA_main == 'BIR' ~ 'AL',
+      CSA_main == 'LAU' ~ 'MS',
+      CSA_main == 'INH' ~ 'IN',
+      CSA_main == 'IPM' ~ 'MI',
+      CSA_main == 'SEW' ~ 'WA',
+      CSA_main == 'SHE' ~ 'MD',
+      CSA_main == 'SLC' ~ 'UT')) |> 
+    
+    mutate(CSA_region = case_when(
+      CSA_state == 'AL' ~ 'Southeast', 
+      CSA_state == 'AZ' ~ 'Southwest',
+      CSA_state == 'CA' ~ 'West', 
+      CSA_state == 'CO' ~ 'West', 
+      CSA_state == 'CT' ~ 'Northeast', 
+      CSA_state == 'FL' ~ 'Southeast',
+      CSA_state == 'GA' ~ 'Southeast', 
+      CSA_state == 'HI' ~ 'West', 
+      CSA_state == 'IL' ~ 'Midwest',
+      CSA_state == 'IN' ~ 'Midwest',
+      CSA_state == 'KY' ~ 'Midwest', 
+      CSA_state == 'LA' ~ 'South', 
+      CSA_state == 'MA' ~ 'Northeast',
+      CSA_state == 'MD' ~ 'East', 
+      CSA_state == 'MI' ~ 'North',
+      CSA_state == 'MN' ~ 'North', 
+      CSA_state == 'MO' ~ 'Midwest',
+      CSA_state == 'MS' ~ 'South', 
+      CSA_state == 'NC' ~ 'East', 
+      CSA_state == 'NE' ~ 'Midwest',
+      CSA_state == 'NM' ~ 'Southwest', 
+      CSA_state == 'NV' ~ 'West', 
+      CSA_state == 'NY' ~ 'Northeast',
+      CSA_state == 'OH' ~ 'Midwest', 
+      CSA_state == 'OK' ~ 'South',
+      CSA_state == 'PA' ~ 'East',
+      CSA_state == 'TN' ~ 'Midwest',
+      CSA_state == 'TX' ~ 'South',
+      CSA_state == 'UT' ~ 'West',
+      CSA_state == 'VA' ~ 'East',
+      CSA_state == 'WA' ~ 'Northwest',
+      CSA_state == 'WI' ~ 'North')) |> 
+    
+    mutate(CSA_region_SEW = case_when(
+      CSA_region == 'Southeast' ~ 1, 
+      CSA_region == 'East' ~ 1,
+      CSA_region == 'West' ~ 1, 
+      CSA_region == 'Southwest' ~ 1, 
+      TRUE ~ 0)) |> 
+    
+    mutate(CSA_region_SW = case_when(
+      CSA_region == 'Southwest' ~ 1, 
+      TRUE ~ 0)) |> 
+    
+    mutate(CSA_region_NS = case_when(
+      CSA_region == 'North' ~ 1,
+      CSA_region == 'South' ~ 1,
+      TRUE ~ 0))
+  
+}
+```
+
+## FUNCTION get derived attributes
+
+```{r, include = FALSE}
+get_attributes <- function(df) {
+  
+  df |> 
+    mutate(CHANGEM_mod = case_when(CHANGEM >= 100 & CHANGEM <= 300 ~ 1, TRUE ~ 0)) |> 
+    mutate(INCOME_medhigh = as.factor(case_when(INCOME >= 5 & INCOME <= 7 ~ 1, TRUE ~ 0))) |> 
+    mutate(CREDITDEGY = case_when(CREDIT_LABEL == 'DE' | CREDIT_LABEL == 'GY' ~ 1, TRUE ~ 0)) |> 
+    mutate(REFERRAL = as.factor(case_when(REFER >= 1 ~ 1, TRUE ~ 0))) |> 
+    mutate(CREDIT_ADJUSTMENT = as.factor(case_when(CREDITAD >= 1 ~ 1, TRUE ~ 0))) |> 
+    mutate(MOU_low = case_when(MOU <= 220 ~ 1, TRUE ~ 0)) |> 
+    mutate(OCC_NPS = case_when(OCC_LABEL == 'NONE' | OCC_LABEL == 'STUDENT' |OCC_LABEL == 'PROFESSIONAL' ~ 1, OCC_LABEL == 'CLERICAL' | OCC_LABEL == 'CRAFT' |OCC_LABEL == 'HOMEMAKER' | OCC_LABEL == 'RETIRED' | OCC_LABEL == 'SELF-EMPLOYED' ~ 0))
+  
+}
+```
+
+## FUNCTION zeros to nas
+
+```{r, include = FALSE}
+zeros_to_nas <- function(df) {
+  
+  df <- df |> 
+    mutate_at(c('AGE1'), ~na_if(., 0)) |> 
+    mutate_at(c('AGE2'), ~na_if(., 0)) |> 
+    mutate_at(c('INCOME'), ~na_if(., 0)) |> 
+    mutate_at(c('SETPRC'), ~na_if(., 0))
+  
+  return(df)
+  
+}
+```
+
+## FUNCTION read churn file
+
+```{r, include = FALSE}
+read_churn_file <- function(path) {
+  
+  data <- read_csv(path) |> 
+    rename(PRZM_NUM = 'Column 45') |> 
+    mutate(CHURN_TARGET = as.factor(CHURN)) |> 
+    mutate(CHURN_INT = CHURN) |> 
+    mutate(MARRY_LABEL = case_when (MARRYYES == 1 ~ 'YES', MARRYNO == 1 ~ 'NO',MARRYUN == 1 ~ 'UNKNOWN')) |> 
+    mutate(PRIZM_LABEL = case_when(PRIZMRUR == 1 ~ 'RURAL', PRIZMUB == 1 ~ 'URBAN', PRIZMTWN == 1 | PRZM_NUM == 3 ~ 'TOWN', TRUE ~ 'UNKNOWN')) |> 
+    mutate(CREDIT_LABEL = case_when(CREDITA == 1 ~ 'A', CREDITAA == 1 ~ 'AA', CREDITB == 1 ~ 'B', CREDITC == 1 ~ 'C', CREDITDE == 1 ~ 'DE', CREDITGY == 1 ~ 'GY', CREDITZ == 1 ~ 'Z')) |> 
+    get_csa_info() |> 
+    select(!c(CALIBRAT, CHURNDEP, CHURN))
+  
+}
+```
+
+## FUNCTION impute missing values
+
+```{r, include = FALSE}
+impute_values <- function(df) {
+  
+  df |> 
+    mutate(REVENUE = replace_na(REVENUE,revenue_median)) |> 
+    mutate(MOU = replace_na(MOU,minutes_median)) |> 
+    mutate(RECCHRGE = replace_na(RECCHRGE,recchrge_median)) |> 
+    mutate(DIRECTAS = replace_na(DIRECTAS,directas_median)) |> 
+    mutate(OVERAGE = replace_na(OVERAGE,overage_median)) |> 
+    mutate(ROAM = replace_na(ROAM,roaming_median)) |> 
+    mutate(CHANGEM = replace_na(CHANGEM,changem_zero)) |> 
+    mutate(CHANGER = replace_na(CHANGER,changer_zero)) |> 
+    mutate(AGE1 = replace_na(AGE1,age1_median)) |> 
+    mutate(AGE2 = replace_na(AGE2,age2_median)) |> 
+    mutate(INCOME = replace_na(INCOME,income_median)) |> 
+    mutate(SETPRC = replace_na(SETPRC,setprice_median))
+  
+}
+```
+
+## read data files
+
+```{r}
+data_churn <- read_churn_file("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Data.csv")
+
+data_churn_test <- read_churn_file("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Project/Data/Churn Verification Data.csv")
+```
+
+## calculate values to impute
+
+```{r, include = FALSE}
+revenue_median <- median(data_churn$REVENUE |> na.omit())
+minutes_median <- median(data_churn$MOU |> na.omit())
+recchrge_median <- median(data_churn$RECCHRGE |> na.omit())
+directas_median <- median(data_churn$DIRECTAS |> na.omit())
+overage_median <- median(data_churn$OVERAGE |> na.omit())
+roaming_median <- median(data_churn$ROAM |> na.omit())
+changem_zero <- 0
+changer_zero <- 0
+age1_median <- median(data_churn$AGE1 |> na.omit())
+age2_median <- median(data_churn$AGE2 |> na.omit())
+income_median <- median(data_churn$INCOME |> na.omit())
+setprice_median <- median(data_churn$SETPRC |> na.omit())
+```
+
+## impute missing values
+
+```{r}
+data_churn <- data_churn |> impute_values()
+
+data_churn_test <- data_churn_test |> impute_values()
+```
+
+## add derived attributes
+
+```{r}
+data_churn <- data_churn |> get_attributes()
+
+data_churn_test <- data_churn_test |> get_attributes()
+```
+
+## prep principal components
+
+```{r, include = FALSE}
+# USAGE
+
+usage_pca_vars <- c('DIRECTAS','OVERAGE','ROAM','CHANGEM','DROPVCE','BLCKVCE','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT','DROPVCE','DROPBLK','BLCKVCE')
+
+usage_pca_vars <- c('DIRECTAS','OVERAGE','ROAM','CALLFWDV','REVENUE','RECCHRGE')
+
+usage_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
+
+usage_pca_rec <- recipe(~., data = usage_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+usage_pca_prep <- prep(usage_pca_rec)
+
+usage_pca_values <- juice(usage_pca_prep) |> 
+  rename(USAGEPC1 = "PC1", USAGEPC2 = "PC2", USAGEPC3 = "PC3", USAGEPC4 = "PC4", USAGEPC5 = "PC5")
+
+usage_pca_values_test <- bake(usage_pca_prep, data_churn_test) |> 
+  rename(USAGEPC1 = "PC1", USAGEPC2 = "PC2", USAGEPC3 = "PC3", USAGEPC4 = "PC4", USAGEPC5 = "PC5")
+
+# COVERAGE
+
+coverage_pca_vars <- c('DROPVCE','DROPBLK','BLCKVCE')
+
+coverage_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
+
+coverage_pca_rec <- recipe(~., data = coverage_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+coverage_pca_prep <- prep(coverage_pca_rec)
+
+coverage_pca_values <- juice(coverage_pca_prep) |> 
+  rename(COVERAGEPC1 = "PC1", COVERAGEPC2 = "PC2", COVERAGEPC3 = "PC3")
+
+coverage_pca_values_test <- bake(coverage_pca_prep, data_churn_test) |> 
+  rename(COVERAGEPC1 = "PC1", COVERAGEPC2 = "PC2", COVERAGEPC3 = "PC3")
+
+# SUBSCRIPTION
+
+sub_pca_vars <- c('REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS')
+#sub_pca_vars <- c('REVENUE','RECCHRGE')
+
+sub_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
+
+sub_pca_rec <- recipe(~., data = sub_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+sub_pca_prep <- prep(sub_pca_rec)
+
+sub_pca_values <- juice(sub_pca_prep) |> 
+  rename(SUBPC1 = "PC1", SUBPC2 = "PC2", SUBPC3 = "PC3", SUBPC4 = "PC4", SUBPC5 = "PC5")
+
+sub_pca_values_test <- bake(sub_pca_prep, data_churn_test) |> 
+  rename(SUBPC1 = "PC1", SUBPC2 = "PC2", SUBPC3 = "PC3", SUBPC4 = "PC4", SUBPC5 = "PC5")
+
+# CUSTOMER SERVICE
+
+service_pca_vars <- c('CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL')
+
+service_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
+
+service_pca_rec <- recipe(~., data = service_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+service_pca_prep <- prep(service_pca_rec)
+
+service_pca_values <- juice(service_pca_prep) |> 
+  rename(SERVICEPC1 = "PC1", SERVICEPC2 = "PC2", SERVICEPC3 = "PC3", SERVICEPC4 = "PC4", SERVICEPC5 = "PC5")
+
+service_pca_values_test <- bake(service_pca_prep, data_churn_test) |> 
+  rename(SERVICEPC1 = "PC1", SERVICEPC2 = "PC2", SERVICEPC3 = "PC3", SERVICEPC4 = "PC4", SERVICEPC5 = "PC5")
+
+# EQUIPMENT
+
+eq_pca_vars <- c('PHONES','MODELS','EQPDAYS','REFURB','SETPRC')
+
+eq_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
+
+eq_pca_rec <- recipe(~., data = eq_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+eq_pca_prep <- prep(eq_pca_rec)
+
+eq_pca_values <- juice(eq_pca_prep) |> 
+  rename(EQPC1 = "PC1", EQPC2 = "PC2", EQPC3 = "PC3", EQPC4 = "PC4", EQPC5 = "PC5")
+
+eq_pca_values_test <- bake(eq_pca_prep, data_churn_test) |> 
+  rename(EQPC1 = "PC1", EQPC2 = "PC2", EQPC3 = "PC3", EQPC4 = "PC4", EQPC5 = "PC5")
+
+# PERSONAL
+
+dem_pca_vars <- c('AGE1','AGE2','PCOWN','CREDITCD','INCOME')
+
+dem_pca_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(dem_pca_vars)))
+
+dem_pca_rec <- recipe(~., data = dem_pca_data) %>%
+  update_role(CUSTOMER, CHURN_TARGET, new_role = "id") %>%
+  step_normalize(all_predictors()) %>%
+  step_pca(all_predictors())
+
+dem_pca_prep <- prep(dem_pca_rec)
+
+dem_pca_values <- juice(dem_pca_prep) |> 
+  rename(DEMPC1 = "PC1", DEMPC2 = "PC2", DEMPC3 = "PC3", DEMPC4 = "PC4", DEMPC5 = "PC5")
+
+dem_pca_values_test <- bake(dem_pca_prep, data_churn_test) |> 
+  rename(DEMPC1 = "PC1", DEMPC2 = "PC2", DEMPC3 = "PC3", DEMPC4 = "PC4", DEMPC5 = "PC5")
+
+# ADD TO DATASETS
+
+data_churn <- data_churn |> 
+  left_join(usage_pca_values, by = 'CUSTOMER') |> 
+  left_join(coverage_pca_values, by = 'CUSTOMER') |> 
+  left_join(sub_pca_values, by = 'CUSTOMER') |> 
+  left_join(service_pca_values, by = 'CUSTOMER') |> 
+  left_join(eq_pca_values, by = 'CUSTOMER') |> 
+  left_join(dem_pca_values, by = 'CUSTOMER')
+
+data_churn_test <- data_churn_test |> 
+  left_join(usage_pca_values_test, by = 'CUSTOMER') |> 
+  left_join(coverage_pca_values_test, by = 'CUSTOMER') |> 
+  left_join(sub_pca_values_test, by = 'CUSTOMER') |> 
+  left_join(service_pca_values_test, by = 'CUSTOMER') |> 
+  left_join(eq_pca_values_test, by = 'CUSTOMER') |> 
+  left_join(dem_pca_values_test, by = 'CUSTOMER')
+
+data_churn <- data_churn |> 
+  mutate(USAGEPC1_high = case_when(USAGEPC1 >= 1 ~ 1, TRUE ~ 0)) |> 
+  mutate(SERVICEPC2_mod = case_when(SERVICEPC2 >= -0.5 & SERVICEPC2 <= 1 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC4_low = case_when(EQPC4 <= 0.1 ~ 1, TRUE ~ 0)) |> 
+  mutate(DEMPC5_low = case_when(DEMPC5 <= -0.5 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC2_low = case_when(EQPC2 <= -2 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC1_high = case_when(EQPC1 >= 0 ~ 1, TRUE ~ 0))
+
+
+
+data_churn_test <- data_churn_test |> 
+  mutate(USAGEPC1_high = case_when(USAGEPC1 >= 1 ~ 1, TRUE ~ 0)) |> 
+  mutate(SERVICEPC2_mod = case_when(SERVICEPC2 >= -0.5 & SERVICEPC2 <= 1 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC4_low = case_when(EQPC4 <= 0.1 ~ 1, TRUE ~ 0)) |> 
+  mutate(DEMPC5_low = case_when(DEMPC5 <= -0.5 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC2_low = case_when(EQPC2 <= -2 ~ 1, TRUE ~ 0)) |> 
+  mutate(EQPC1_high = case_when(EQPC1 >= 0 ~ 1, TRUE ~ 0))
+
+# summary(data_churn_test)
+# data_churn_test |> 
+#   ggplot(aes(x = DROPVCE, y = BLCKVCE, color = CHURN_TARGET)) +
+#   geom_point()
+```
+
+## model variables
+
+```{r}
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','RECCHRGE','CHANGEM_mod','DIRECTAS','CHANGER','CUSTCARE','MOUREC','INCALLS','PHONES','MODELS','SETPRC','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','SETPRCM','MARRY_LABEL','MAILRES','TRAVEL','PCOWN','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT')#,'CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','RECCHRGE','CHANGEM_mod','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','SETPRCM','MARRY_LABEL','MAILRES','TRAVEL','PCOWN','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT','CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','CHANGEM_mod','MOU_low','USAGEPC2','SUBPC5','SERVICEPC1','EQPC1','EQPC4_low','DEMPC5','MODELS','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','MARRYUN','MAILRES','TRAVEL','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT','CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','CHILDREN','CREDITDEGY','PRIZMTWN','TRAVEL','CSA_region_SEW','CSA_region_NS','CHANGEM_mod','ROAM','OVERAGE','DIRECTAS','CALLFWDV','REVENUE','RECCHRGE','RETCALL','MAILRES','REFER','PHONES','MODELS','SETPRC','REFURB','EQPDAYS','CHILDREN','TRAVEL','INCOME','PCOWN','CREDITCD','AGE1','AGE2')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU_low','CHILDREN','CREDITDEGY','PRIZMTWN','TRAVEL','CSA_region_SEW','CSA_region_NS','CHANGEM','USAGEPC2','RETCALL')
+
+#model_vars <- c('PHONES','MODELS','SETPRC','EQPDAYS','REFURB')
+
+working_model_data <- data_churn |>
+  select(all_of(model_vars)) |> 
+  select(!CUSTOMER)
+```
+
+## model for correlation & collinearity
+
+```{r}
+pairs_data <- working_model_data |> select(!c('CHURN_TARGET'))
+
+res <- pairs_data |> cor()
+
+corrplot(res, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
+
+model <- glm(CHURN_TARGET ~.,family=binomial(link='logit'),data=working_model_data)
+
+vif(model)
+```
+
+## Regularized Logistic Regression Model
+
+```{r}
+set.seed(10)
+
+train <- data_churn |>
+  select(all_of(model_vars))
+
+train <- upSample(x = train, y = train$CHURN_TARGET) |>
+  select(!Class)
+
+train$X <- sample(rep(c(0, 1, 2, 3), nrow(train) / 4))
+
+train <- train |>
+  distinct(CUSTOMER, X, .keep_all=TRUE) |>
+  select(!c(X,CUSTOMER))
+
+data_train_x <- model.matrix(CHURN_TARGET~., train)[,-1]
+data_train_y <- as.integer(train$CHURN_TARGET)
+
+cv.lasso <- cv.glmnet(data_train_x, data_train_y, alpha = 1, family = "binomial")
+
+model1 <- glmnet(data_train_x, data_train_y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+
+coef(model1)
+
+data_test <- data_churn_test |>
+  select(all_of(model_vars)) |> 
+  select(!CUSTOMER)
+
+x.test <- model.matrix(CHURN_TARGET ~., data_test)[,-1]
+probabilities <- model1 %>% predict(newx = x.test,type="response")
+predicted.classes <- ifelse(probabilities > 0.5, 1, 0)
+
+observed.classes <- data_test$CHURN_TARGET
+mean(predicted.classes == observed.classes)
+
+pred_results <- data_test %>%
+  select(CHURN_TARGET) %>%
+  bind_cols(predicted.classes) |> 
+  mutate(predicted = as.factor(s0))
+
+conf_mat(pred_results,
+         truth = CHURN_TARGET,
+         estimate = predicted)
+
+custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precision, yardstick::recall, f_meas, kap, mcc)
+
+custom_metrics(pred_results,
+               truth = CHURN_TARGET,
+               estimate = predicted)
+```
+
+## explore PCs and variables
+
+```{r, include = FALSE}
+# usage_churn_data <- data_churn |>
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
+# 
+# usage_pcas <- data_churn |>
+#   select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
+# 
+# usage_churn_data_test <- data_churn_test |>
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
+# 
+# usage_pcas_test <- data_churn_test |>
+#   select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
+# 
+# 
+# usage_tidied_pca <- tidy(usage_pca_prep, 2)
+# 
+# usage_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   mutate(component = fct_inorder(component)) %>%
+#   ggplot(aes(value, terms, fill = terms)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~component, nrow = 1) +
+#   labs(y = NULL)
+# 
+# usage_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   group_by(component) %>%
+#   ungroup() %>%
+#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
+#   ggplot(aes(abs(value), terms, fill = value > 0)) +
+#   geom_col() +
+#   facet_wrap(~component, scales = "free_y") +
+#   scale_y_reordered() +
+#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+# 
+# for(i in colnames(usage_pcas)) {
+#   dist_df <- usage_pcas |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# 
+#   dist_df <- usage_pcas_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# for(i in colnames(usage_churn_data)) {
+#   dist_df <- usage_churn_data |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# 
+#   dist_df <- usage_churn_data_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# coverage_churn_data <- data_churn |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
+# 
+# coverage_pcas <- data_churn |> 
+#   select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
+# 
+# coverage_churn_data_test <- data_churn_test |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
+# 
+# coverage_pcas_test <- data_churn_test |> 
+#   select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
+# 
+# 
+# coverage_tidied_pca <- tidy(coverage_pca_prep, 2)
+# 
+# coverage_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   mutate(component = fct_inorder(component)) %>%
+#   ggplot(aes(value, terms, fill = terms)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~component, nrow = 1) +
+#   labs(y = NULL)
+# 
+# coverage_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   group_by(component) %>%
+#   ungroup() %>%
+#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
+#   ggplot(aes(abs(value), terms, fill = value > 0)) +
+#   geom_col() +
+#   facet_wrap(~component, scales = "free_y") +
+#   scale_y_reordered() +
+#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+# 
+# for(i in colnames(coverage_pcas)) {
+#   dist_df <- coverage_pcas |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- coverage_pcas_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# for(i in colnames(coverage_churn_data)) {
+#   dist_df <- coverage_churn_data |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- coverage_churn_data_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# sub_churn_data <- data_churn |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
+# 
+# sub_pcas <- data_churn |> 
+#   select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
+# 
+# sub_churn_data_test <- data_churn_test |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
+# 
+# sub_pcas_test <- data_churn_test |> 
+#   select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
+# 
+# 
+# sub_tidied_pca <- tidy(sub_pca_prep, 2)
+# 
+# sub_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   mutate(component = fct_inorder(component)) %>%
+#   ggplot(aes(value, terms, fill = terms)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~component, nrow = 1) +
+#   labs(y = NULL)
+# 
+# sub_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   group_by(component) %>%
+#   ungroup() %>%
+#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
+#   ggplot(aes(abs(value), terms, fill = value > 0)) +
+#   geom_col() +
+#   facet_wrap(~component, scales = "free_y") +
+#   scale_y_reordered() +
+#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+# 
+# for(i in colnames(sub_pcas)) {
+#   dist_df <- sub_pcas |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- sub_pcas_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# for(i in colnames(sub_churn_data)) {
+#   dist_df <- sub_churn_data |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- sub_churn_data_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# service_churn_data <- data_churn |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
+# 
+# service_pcas <- data_churn |> 
+#   select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
+# 
+# service_churn_data_test <- data_churn_test |> 
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
+# 
+# service_pcas_test <- data_churn_test |> 
+#   select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
+# 
+# 
+# service_tidied_pca <- tidy(service_pca_prep, 2)
+# 
+# service_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   mutate(component = fct_inorder(component)) %>%
+#   ggplot(aes(value, terms, fill = terms)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~component, nrow = 1) +
+#   labs(y = NULL)
+# 
+# service_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   group_by(component) %>%
+#   ungroup() %>%
+#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
+#   ggplot(aes(abs(value), terms, fill = value > 0)) +
+#   geom_col() +
+#   facet_wrap(~component, scales = "free_y") +
+#   scale_y_reordered() +
+#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+# 
+# for(i in colnames(service_pcas)) {
+#   dist_df <- service_pcas |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- service_pcas_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# for(i in colnames(service_churn_data)) {
+#   dist_df <- service_churn_data |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- service_churn_data_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+
+# eq_churn_data <- data_churn |>
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
+# 
+# eq_pcas <- data_churn |>
+#   select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
+# 
+# eq_churn_data_test <- data_churn_test |>
+#   select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
+# 
+# eq_pcas_test <- data_churn_test |>
+#   select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
+# 
+# 
+# eq_tidied_pca <- tidy(eq_pca_prep, 2)
+# 
+# eq_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   mutate(component = fct_inorder(component)) %>%
+#   ggplot(aes(value, terms, fill = terms)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~component, nrow = 1) +
+#   labs(y = NULL)
+# 
+# eq_tidied_pca %>%
+#   filter(component %in% paste0("PC", 1:5)) %>%
+#   group_by(component) %>%
+#   ungroup() %>%
+#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
+#   ggplot(aes(abs(value), terms, fill = value > 0)) +
+#   geom_col() +
+#   facet_wrap(~component, scales = "free_y") +
+#   scale_y_reordered() +
+#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+# 
+# for(i in colnames(eq_pcas)) {
+#   dist_df <- eq_pcas |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# 
+#   dist_df <- eq_pcas_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# for(i in colnames(eq_churn_data)) {
+#   dist_df <- eq_churn_data |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# 
+#   dist_df <- eq_churn_data_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+# 
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+# 
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# 
+# 
+# 
+# 
+#
+```
+
+
+```{r}
+dem_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(dem_pca_vars)))
+
+dem_pcas <- data_churn |>
+  select(c('CHURN_TARGET','DEMPC1','DEMPC2','DEMPC3','DEMPC4','DEMPC5'))
+
+dem_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(dem_pca_vars)))
+
+dem_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','DEMPC1','DEMPC2','DEMPC3','DEMPC4','DEMPC5'))
+
+
+dem_tidied_pca <- tidy(dem_pca_prep, 2)
+
+dem_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+dem_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(dem_pcas)) {
+  dist_df <- dem_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- dem_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(dem_churn_data)) {
+  dist_df <- dem_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- dem_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+```
+
+## model variables
+
+```{r}
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','RECCHRGE','CHANGEM_mod','DIRECTAS','CHANGER','CUSTCARE','MOUREC','INCALLS','PHONES','MODELS','SETPRC','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','SETPRCM','MARRY_LABEL','MAILRES','TRAVEL','PCOWN','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT')#,'CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','RECCHRGE','CHANGEM_mod','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','SETPRCM','MARRY_LABEL','MAILRES','TRAVEL','PCOWN','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT','CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','CHANGEM_mod','MOU_low','USAGEPC2','SUBPC5','SERVICEPC1','EQPC1','EQPC4_low','DEMPC5','MODELS','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','MARRYUN','MAILRES','TRAVEL','RETCALL','MCYCLE', 'REFERRAL', 'CREDIT_ADJUSTMENT','CSA_region_SEW','CSA_region_NS')
+
+model_vars <- c('CUSTOMER','CHURN_TARGET','CHANGEM_mod','MOU_low','MODELS','CHILDREN','CREDITDEGY','PRIZMTWN','REFURB','MARRYUN','MAILRES','TRAVEL','RETCALL', 'REFERRAL', 'CSA_region_SEW', 'CSA_region_NS')
+
+working_model_data <- data_churn |>
+  select(all_of(model_vars))
+```
+
+## variables by category
+
+```{r}
+#5
+id_vars <- c('CUSTOMER','OCC','MARRY')
+#1
+target_vars <- c('CHURN')
+#16
+usage_vars <- c('MOU','OVERAGE','ROAM','CHANGEM','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','CALLFWDV','CALLWAIT','NEWCELLY','NEWCELLN')
+#2
+coverage_vars <- c('DROPVCE','DROPBLK','BLCKVCE')
+#6
+sub_vars <- c('REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS')
+#9
+service_vars <- c('DIRECTAS','CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL')
+#7
+eq_vars <- c('PHONES','MODELS','EQPDAYS','REFURB','WEBCAP','SETPRCM','SETPRC')
+#4
+dem_vars_label <- c('CREDIT_RATING','PRZM_NUM','OCC_LABEL','MARRY_LABEL')
+#20
+dem_vars_dich <- c('CREDITA', 'CREDITAA', 'CREDITB', 'CREDITC', 'CREDITDE', 'CREDITGY', 'CREDITZ', 'PRIZMRUR', 'PRIZMUB', 'PRIZMTWN', 'OCCPROF', 'OCCCLER', 'OCCCRFT', 'OCCSTUD', 'OCCHMKR', 'OCCRET', 'OCCSELF', 'MARRYUN', 'MARRYYES', 'MARRYNO')
+#13
+dem_vars_other <- c('AGE1','AGE2','CHILDREN','TRUCK','RV','OWNRENT','TRAVEL','PCOWN','CREDITCD','INCMISS','INCOME','MCYCLE','CREDITAD')
+#2
+location_vars <- c('CSA','CSA_main')
+```
+
+## PCA Data
+
+```{r}
+pca_data <- data_churn
+#5
+id_pca_vars <- c('CUSTOMER')
+#1
+target_pca_vars <- c('CHURN_TARGET')
+#16
+usage_pca_vars <- c('MOU','DIRECTAS','OVERAGE','ROAM','CHANGEM','DROPVCE','BLCKVCE','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT')
+#2
+coverage_pca_vars <- c('DROPVCE','DROPBLK','BLCKVCE')
+#6
+sub_pca_vars <- c('REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS')
+#sub_pca_vars <- c('REVENUE','RECCHRGE')
+#9
+service_pca_vars <- c('CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL')
+#7
+eq_pca_vars <- c('PHONES','MODELS','EQPDAYS','REFURB','WEBCAP','SETPRCM','SETPRC','NEWCELLY','NEWCELLN')
+#13
+dem_pca_vars <- c('AGE1','AGE2','PCOWN','CREDITCD','INCOME','MCYCLE','CREDITAD')
+```
+
+## variables by type
+
+```{r}
+target_vars <- c('CUSTOMER','CHURN_TARGET','CHURN_INT')
+
+numeric_vars <- c('REVENUE','MOU','RECCHRGE','DIRECTAS','OVERAGE','ROAM','CHANGEM','CHANGER','DROPVCE','BLCKVCE','UNANSVCE','CUSTCARE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT','MONTHS','UNIQSUBS','ACTVSUBS','PHONES','MODELS','EQPDAYS','AGE1','AGE2','INCOME','SETPRC','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5','DEMPC1','DEMPC2','DEMPC3','DEMPC4','DEMPC5')
+
+categorical_vars <- c('INCOME_medhigh','CREDITDEGY', 'REFERRAL','CREDIT_ADJUSTMENT','CHILDREN','CREDIT_LABEL','PRIZM_LABEL','REFURB','WEBCAP','TRUCK','RV','OCC_LABEL','OWNRENT','INCMISS','SETPRCM','MARRY_LABEL','MAILORD','MAILRES','MAILFLAG','TRAVEL','PCOWN','CREDITCD','RETCALLS','RETACCPT','NEWCELLY','NEWCELLN','REFER','MCYCLE','CREDITAD','RETCALL', 'CSA_state', 'CSA_region','MOU_low','CHANGEM_mod', 'USAGEPC1_high','SERVICEPC2_mod','EQPC4_low','DEMPC5_low','EQPC2_low','EQPC1_high')
+
+data_churn <- data_churn |> 
+  mutate(CREDITDEGY = as.factor(CREDITDEGY), CHILDREN = as.factor(CHILDREN), CREDIT_LABEL = as.factor(CREDIT_LABEL), PRIZM_LABEL = as.factor(PRIZM_LABEL), REFURB = as.factor(REFURB), WEBCAP = as.factor(WEBCAP), TRUCK = as.factor(TRUCK), RV = as.factor(RV), OCC_LABEL = as.factor(OCC_LABEL), OWNRENT = as.factor(OWNRENT), INCMISS = as.factor(INCMISS), SETPRCM = as.factor(SETPRCM), MARRY_LABEL = as.factor(MARRY_LABEL), MAILORD = as.factor(MAILORD), MAILRES = as.factor(MAILRES), MAILFLAG = as.factor(MAILFLAG), TRAVEL = as.factor(TRAVEL), PCOWN = as.factor(PCOWN), CREDITCD = as.factor(CREDITCD), RETCALLS = as.factor(RETCALLS), RETACCPT = as.factor(RETACCPT), NEWCELLY = as.factor(NEWCELLY), NEWCELLN = as.factor(NEWCELLN), REFER = as.factor(REFER), MCYCLE = as.factor(MCYCLE), CREDITAD = as.factor(CREDITAD), RETCALL = as.factor(RETCALL), MOU_low = as.factor(MOU_low), USAGEPC1_high = as.factor(USAGEPC1_high), SERVICEPC2_mod = as.factor(SERVICEPC2_mod), EQPC4_low = as.factor(EQPC4_low), DEMPC5_low = as.factor(DEMPC5_low), CHANGEM_mod = as.factor(CHANGEM_mod), EQPC2_low = as.factor(EQPC2_low), EQPC1_high = as.factor(EQPC1_high))
+```
+
+## data distributions
+
+```{r}
+churn_data <- data_churn |>
+  select(all_of(target_vars), all_of(numeric_vars), all_of(categorical_vars))
+# 
+# numeric_df <- churn_data |> 
+#   select(c(CHURN_TARGET,all_of(numeric_vars)))
+# 
+# numeric_df_test <- data_churn_test |> 
+#   select(c(CHURN_TARGET,all_of(numeric_vars)))
+# 
+# for(i in colnames(numeric_df)) {
+#   dist_df <- numeric_df |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('training')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+#   
+#   dist_df <- numeric_df_test |>
+#     select(c('CHURN_TARGET',all_of(i))) |>
+#     na.omit()
+#   plot <- dist_df |>
+#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+#     geom_density()
+#   print(plot)
+#   print('testing')
+#   
+#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+#   if (i != 'CHURN_TARGET') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+categorical_df <- data_churn |>
+  select(c(CHURN_INT,CHURN_TARGET,all_of(categorical_vars)))
+
+categorical_df_test <- data_churn_test |>
+  select(c(CHURN_INT,CHURN_TARGET,all_of(categorical_vars)))
+
+for(i in colnames(categorical_df)) {
+  dist_df <- categorical_df |>
+    select(c('CHURN_INT','CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[3],fill='CHURN_TARGET')) +
+    facet_wrap('CHURN_TARGET', nrow = 2) +
+    geom_bar()
+  #print(plot)
+  print('training')
+
+  dist_df$X <- pull(dist_df[,which(colnames(dist_df)==i)])
+  dist_grouped <- dist_df |>
+    group_by(X) |>
+    summarize(count = n(), churn = sum(CHURN_INT)) |>
+    mutate(pct = churn / count)
+  print(dist_grouped)
+
+  dist_df <- categorical_df_test |>
+    select(c('CHURN_INT','CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[3],fill='CHURN_TARGET')) +
+    facet_wrap('CHURN_TARGET', nrow = 2) +
+    geom_bar()
+  #print(plot)
+  print('testing')
+
+  dist_df$X <- pull(dist_df[,which(colnames(dist_df)==i)])
+  dist_grouped <- dist_df |>
+    group_by(X) |>
+    summarize(count = n(), churn = sum(CHURN_INT)) |>
+    mutate(pct = churn / count)
+  print(dist_grouped)
+}
+```
+
+## t tests
+
+```{r}
+# for(i in colnames(numeric_df)) {
+#   dist_df <- numeric_df |>
+#     select(c('CHURN',all_of(i))) |>
+#     na.omit()
+#   print(i)
+#   formula <- as.formula(paste(i, " ~ CHURN"))
+#   if (i != 'CHURN') {
+#     ttest <- t.test(formula, dist_df)
+#     print(ttest)
+#   }
+# }
+# 
+# t.test(REVENUE ~ CHURN, numeric_df)
+```
+
+## selecting model variables
+
+```{r}
+#model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','MOUREC','OUTCALLS','DIRECTAS','CHANGEM','PEAKVCE','CALLWAIT','OPEAKVCE','REVENUE','RECCHRGE','DROPBLK','UNANSVCE','ACTVSUBS','MAILRES','RETCALLS','EQPDAYS','REFURB')
+
+# model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','OPEAKVCE','RETCALLS','EQPDAYS','REFURB','CSA_region','CSA_region_SEW','CSA_region_SW')
+# 
+# model_vars <- c('CUSTOMER','CHURN','MOU','OVERAGE','ROAM','CHANGEM','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','CALLFWDV','CALLWAIT','NEWCELLY','NEWCELLN','DROPVCE','DROPBLK','BLCKVCE','REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS','DIRECTAS','CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL','PHONES','MODELS','EQPDAYS','REFURB','WEBCAP','SETPRC','CREDIT_RATING','PRZM_NUM','OCC_LABEL','MARRYUN','MARRYYES','MARRYNO','AGE1','AGE2','CHILDREN','TRUCK','RV','OWNRENT','TRAVEL','PCOWN','CREDITCD','INCMISS','INCOME','MCYCLE','CREDITAD','CSA_main')
+# 
+# model_vars <- c('CUSTOMER','CHURN_TARGET','MOU','OVERAGE','ROAM','CHANGEM','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','CALLFWDV','CALLWAIT','NEWCELLY','NEWCELLN','DROPVCE','DROPBLK','BLCKVCE','REVENUE','RECCHRGE','CHANGER','MONTHS','UNIQSUBS','ACTVSUBS','DIRECTAS','CUSTCARE','MAILORD','MAILRES','MAILFLAG','RETCALLS','RETACCPT','REFER','RETCALL','PHONES','MODELS','EQPDAYS','REFURB','WEBCAP','SETPRC','CREDIT_LABEL','PRIZM_LABEL','MARRY_LABEL','AGE1','AGE2','CHILDREN','TRUCK','RV','TRAVEL','PCOWN','CREDITCD','INCOME','MCYCLE','CREDITAD')
+```
+
+
+

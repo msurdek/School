@@ -513,568 +513,568 @@ custom_metrics(pred_results,
 
 ## explore PCs and variables
 
-```{r, include = FALSE}
-# usage_churn_data <- data_churn |>
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
-# 
-# usage_pcas <- data_churn |>
-#   select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
-# 
-# usage_churn_data_test <- data_churn_test |>
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
-# 
-# usage_pcas_test <- data_churn_test |>
-#   select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
-# 
-# 
-# usage_tidied_pca <- tidy(usage_pca_prep, 2)
-# 
-# usage_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   mutate(component = fct_inorder(component)) %>%
-#   ggplot(aes(value, terms, fill = terms)) +
-#   geom_col(show.legend = FALSE) +
-#   facet_wrap(~component, nrow = 1) +
-#   labs(y = NULL)
-# 
-# usage_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   group_by(component) %>%
-#   ungroup() %>%
-#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
-#   ggplot(aes(abs(value), terms, fill = value > 0)) +
-#   geom_col() +
-#   facet_wrap(~component, scales = "free_y") +
-#   scale_y_reordered() +
-#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
-# 
-# for(i in colnames(usage_pcas)) {
-#   dist_df <- usage_pcas |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# 
-#   dist_df <- usage_pcas_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# for(i in colnames(usage_churn_data)) {
-#   dist_df <- usage_churn_data |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# 
-#   dist_df <- usage_churn_data_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
+```{r}
+usage_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# coverage_churn_data <- data_churn |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
-# 
-# coverage_pcas <- data_churn |> 
-#   select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
-# 
-# coverage_churn_data_test <- data_churn_test |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
-# 
-# coverage_pcas_test <- data_churn_test |> 
-#   select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
-# 
-# 
-# coverage_tidied_pca <- tidy(coverage_pca_prep, 2)
-# 
-# coverage_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   mutate(component = fct_inorder(component)) %>%
-#   ggplot(aes(value, terms, fill = terms)) +
-#   geom_col(show.legend = FALSE) +
-#   facet_wrap(~component, nrow = 1) +
-#   labs(y = NULL)
-# 
-# coverage_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   group_by(component) %>%
-#   ungroup() %>%
-#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
-#   ggplot(aes(abs(value), terms, fill = value > 0)) +
-#   geom_col() +
-#   facet_wrap(~component, scales = "free_y") +
-#   scale_y_reordered() +
-#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
-# 
-# for(i in colnames(coverage_pcas)) {
-#   dist_df <- coverage_pcas |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- coverage_pcas_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# for(i in colnames(coverage_churn_data)) {
-#   dist_df <- coverage_churn_data |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- coverage_churn_data_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# sub_churn_data <- data_churn |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
-# 
-# sub_pcas <- data_churn |> 
-#   select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
-# 
-# sub_churn_data_test <- data_churn_test |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
-# 
-# sub_pcas_test <- data_churn_test |> 
-#   select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
-# 
-# 
-# sub_tidied_pca <- tidy(sub_pca_prep, 2)
-# 
-# sub_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   mutate(component = fct_inorder(component)) %>%
-#   ggplot(aes(value, terms, fill = terms)) +
-#   geom_col(show.legend = FALSE) +
-#   facet_wrap(~component, nrow = 1) +
-#   labs(y = NULL)
-# 
-# sub_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   group_by(component) %>%
-#   ungroup() %>%
-#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
-#   ggplot(aes(abs(value), terms, fill = value > 0)) +
-#   geom_col() +
-#   facet_wrap(~component, scales = "free_y") +
-#   scale_y_reordered() +
-#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
-# 
-# for(i in colnames(sub_pcas)) {
-#   dist_df <- sub_pcas |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- sub_pcas_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# for(i in colnames(sub_churn_data)) {
-#   dist_df <- sub_churn_data |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- sub_churn_data_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# 
-# 
-# 
-# 
-# 
-# service_churn_data <- data_churn |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
-# 
-# service_pcas <- data_churn |> 
-#   select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
-# 
-# service_churn_data_test <- data_churn_test |> 
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
-# 
-# service_pcas_test <- data_churn_test |> 
-#   select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
-# 
-# 
-# service_tidied_pca <- tidy(service_pca_prep, 2)
-# 
-# service_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   mutate(component = fct_inorder(component)) %>%
-#   ggplot(aes(value, terms, fill = terms)) +
-#   geom_col(show.legend = FALSE) +
-#   facet_wrap(~component, nrow = 1) +
-#   labs(y = NULL)
-# 
-# service_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   group_by(component) %>%
-#   ungroup() %>%
-#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
-#   ggplot(aes(abs(value), terms, fill = value > 0)) +
-#   geom_col() +
-#   facet_wrap(~component, scales = "free_y") +
-#   scale_y_reordered() +
-#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
-# 
-# for(i in colnames(service_pcas)) {
-#   dist_df <- service_pcas |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- service_pcas_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# for(i in colnames(service_churn_data)) {
-#   dist_df <- service_churn_data |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-#   
-#   dist_df <- service_churn_data_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-#   
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-#   
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+usage_pcas <- data_churn |>
+  select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
 
-# eq_churn_data <- data_churn |>
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
-# 
-# eq_pcas <- data_churn |>
-#   select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
-# 
-# eq_churn_data_test <- data_churn_test |>
-#   select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
-# 
-# eq_pcas_test <- data_churn_test |>
-#   select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
-# 
-# 
-# eq_tidied_pca <- tidy(eq_pca_prep, 2)
-# 
-# eq_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   mutate(component = fct_inorder(component)) %>%
-#   ggplot(aes(value, terms, fill = terms)) +
-#   geom_col(show.legend = FALSE) +
-#   facet_wrap(~component, nrow = 1) +
-#   labs(y = NULL)
-# 
-# eq_tidied_pca %>%
-#   filter(component %in% paste0("PC", 1:5)) %>%
-#   group_by(component) %>%
-#   ungroup() %>%
-#   mutate(terms = reorder_within(terms, abs(value), component)) %>%
-#   ggplot(aes(abs(value), terms, fill = value > 0)) +
-#   geom_col() +
-#   facet_wrap(~component, scales = "free_y") +
-#   scale_y_reordered() +
-#   labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
-# 
-# for(i in colnames(eq_pcas)) {
-#   dist_df <- eq_pcas |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# 
-#   dist_df <- eq_pcas_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# for(i in colnames(eq_churn_data)) {
-#   dist_df <- eq_churn_data |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# 
-#   dist_df <- eq_churn_data_test |>
-#     select(c('CHURN_TARGET',all_of(i))) |>
-#     na.omit()
-#   print(i)
-#   plot <- dist_df |>
-#     ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
-#     geom_density()
-#   print(plot)
-#   print('training')
-# 
-#   formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
-# 
-#   if (i != 'CHURN_TARGET') {
-#     ttest <- t.test(formula, dist_df)
-#     print(ttest)
-#   }
-# }
-# 
-# 
-# 
-# 
-# 
-#
+usage_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(usage_pca_vars)))
+
+usage_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','USAGEPC1','USAGEPC2','USAGEPC3','USAGEPC4','USAGEPC5'))
+
+
+usage_tidied_pca <- tidy(usage_pca_prep, 2)
+
+usage_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+usage_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(usage_pcas)) {
+  dist_df <- usage_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- usage_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(usage_churn_data)) {
+  dist_df <- usage_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- usage_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+
+
+
+
+
+
+
+
+coverage_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
+
+coverage_pcas <- data_churn |>
+  select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
+
+coverage_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
+
+coverage_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','COVERAGEPC1','COVERAGEPC2','COVERAGEPC3'))
+
+
+coverage_tidied_pca <- tidy(coverage_pca_prep, 2)
+
+coverage_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+coverage_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(coverage_pcas)) {
+  dist_df <- coverage_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- coverage_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(coverage_churn_data)) {
+  dist_df <- coverage_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- coverage_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+
+
+
+
+
+
+sub_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
+
+sub_pcas <- data_churn |>
+  select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
+
+sub_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(sub_pca_vars)))
+
+sub_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','SUBPC1','SUBPC2','SUBPC3','SUBPC4','SUBPC5'))
+
+
+sub_tidied_pca <- tidy(sub_pca_prep, 2)
+
+sub_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+sub_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(sub_pcas)) {
+  dist_df <- sub_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- sub_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(sub_churn_data)) {
+  dist_df <- sub_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- sub_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+
+
+
+
+
+service_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
+
+service_pcas <- data_churn |>
+  select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
+
+service_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(service_pca_vars)))
+
+service_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','SERVICEPC1','SERVICEPC2','SERVICEPC3','SERVICEPC4','SERVICEPC5'))
+
+
+service_tidied_pca <- tidy(service_pca_prep, 2)
+
+service_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+service_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(service_pcas)) {
+  dist_df <- service_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- service_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(service_churn_data)) {
+  dist_df <- service_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- service_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+
+
+
+
+
+
+
+eq_churn_data <- data_churn |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
+
+eq_pcas <- data_churn |>
+  select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
+
+eq_churn_data_test <- data_churn_test |>
+  select(c('CUSTOMER','CHURN_TARGET',all_of(eq_pca_vars)))
+
+eq_pcas_test <- data_churn_test |>
+  select(c('CHURN_TARGET','EQPC1','EQPC2','EQPC3','EQPC4','EQPC5'))
+
+
+eq_tidied_pca <- tidy(eq_pca_prep, 2)
+
+eq_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  mutate(component = fct_inorder(component)) %>%
+  ggplot(aes(value, terms, fill = terms)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~component, nrow = 1) +
+  labs(y = NULL)
+
+eq_tidied_pca %>%
+  filter(component %in% paste0("PC", 1:5)) %>%
+  group_by(component) %>%
+  ungroup() %>%
+  mutate(terms = reorder_within(terms, abs(value), component)) %>%
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_y_reordered() +
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+
+for(i in colnames(eq_pcas)) {
+  dist_df <- eq_pcas |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- eq_pcas_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+for(i in colnames(eq_churn_data)) {
+  dist_df <- eq_churn_data |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+
+  dist_df <- eq_churn_data_test |>
+    select(c('CHURN_TARGET',all_of(i))) |>
+    na.omit()
+  print(i)
+  plot <- dist_df |>
+    ggplot(aes_string(x=names(dist_df)[2],color='CHURN_TARGET')) +
+    geom_density()
+  print(plot)
+  print('training')
+
+  formula <- as.formula(paste(i, " ~ CHURN_TARGET"))
+
+  if (i != 'CHURN_TARGET') {
+    ttest <- t.test(formula, dist_df)
+    print(ttest)
+  }
+}
+
+
+
+
+
+
 ```
 
 

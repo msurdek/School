@@ -20,6 +20,7 @@ library(caret)
 library(glmnet)
 library(corrplot)
 library(car)
+library(usmap)
 source("/home/msurdek/Documents/School/SNHU/DAT 690 Capstone in Data Analytics/Assignments/Programming Revision/Churn Data Pre-Processing Functions.R")
 ```
 
@@ -119,7 +120,7 @@ data_churn_test <- data_churn_test |>
 
 ```{r}
 # select data for model
-model_vars <- c('CUSTOMER','CHURN_TARGET','MOU_low','CHANGEM','USAGEPC2','RETCALL','CSA_region_SEW','CSA_region_NS','PRIZMTWN','TRAVEL','CHILDREN','CREDITDEGY')
+model_vars <- c('CUSTOMER','CHURN_TARGET','CHANGEM','RETCALL','PRIZMTWN','TRAVEL','CHILDREN','MOU_low','USAGEPC2','CSA_region_SEW','CSA_region_NS','CREDITDEGY')
 
 working_model_data <- data_churn |>
   select(all_of(model_vars)) |> 
@@ -138,7 +139,7 @@ corrplot(res, type = "upper", order = "hclust", tl.col = "black", tl.srt = 45)
 
 model <- glm(CHURN_TARGET ~.,family=binomial(link='logit'),data=working_model_data)
 
-vif(model)
+print(vif(model))
 ```
 
 ## 8) Regularized Logistic Regression Model
@@ -159,7 +160,7 @@ train$X <- sample(rep(c(0, 1, 2, 3), nrow(train) / 4))
 train <- train |>
   distinct(CUSTOMER, X, .keep_all=TRUE) |>
   select(!c(X,CUSTOMER))
-
+#train |> tabyl(CHURN_TARGET)
 # create model training matrices
 data_train_x <- model.matrix(CHURN_TARGET~., train)[,-1]
 data_train_y <- as.integer(train$CHURN_TARGET)
@@ -208,3 +209,98 @@ custom_metrics <- metric_set(accuracy, sens, yardstick::spec, yardstick::precisi
 
 custom_metrics(pred_results, truth = CHURN_TARGET, estimate = predicted)
 ```
+
+## 10) Presentation Viz
+
+```{r}
+data_churn |> 
+  ggplot(aes(x=INCOME, color = CHURN_TARGET)) +
+  geom_density() +
+  theme_bw() +
+  scale_color_manual(values = c("royalblue","red"))
+
+data_churn |> 
+  group_by(PRIZM_LABEL) |> 
+  summarize(count = n(), churn = sum(CHURN_INT), pct = churn/count)
+
+data_churn |> 
+  ggplot(aes(x = PRIZM_LABEL, fill = CHURN_TARGET)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("royalblue","red")) +
+  theme_bw()
+
+data_churn |> 
+  ggplot(aes(x=CHANGEM, color = CHURN_TARGET)) +
+  geom_density() +
+  theme_bw() +
+  scale_color_manual(values = c("royalblue","red"))
+
+data_churn |> 
+  ggplot(aes(x=MONTHS, color = CHURN_TARGET)) +
+  geom_density() +
+  theme_bw() +
+  scale_color_manual(values = c("royalblue","red"))
+
+data_churn |> 
+  ggplot(aes(x=EQPDAYS, color = CHURN_TARGET)) +
+  geom_density() +
+  theme_bw() +
+  scale_color_manual(values = c("royalblue","red"))
+
+data_churn |> 
+  mutate(REFURB = as.factor(REFURB)) |> 
+  ggplot(aes(x = REFURB, fill = CHURN_TARGET)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("royalblue","red")) +
+  theme_bw()
+
+data_churn |> 
+  mutate(RETCALL = as.factor(RETCALL)) |> 
+  ggplot(aes(x = RETCALL, fill = CHURN_TARGET)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("royalblue","red")) +
+  theme_bw()
+
+data_churn |> 
+  ggplot(aes(x=MOU, color = CHURN_TARGET)) +
+  geom_density() +
+  theme_bw() +
+  scale_color_manual(values = c("royalblue","red"))
+
+data_churn |> 
+  ggplot(aes(x=MOU, fill = CHURN_TARGET)) +
+  geom_histogram() +
+  theme_bw() +
+  scale_fill_manual(values = c("royalblue","red")) +
+  facet_wrap(~CHURN_TARGET, nrow = 2, scales = "free_y")
+
+#data_churn |> tabyl(CSA)
+
+missing_df <- data.frame(state = c("AK","AR","DC","DE","ID","IA","KS","ME","MT","NH","NJ","ND","OR","RI","SC","SD","VT","WV","WY"),
+                         region = c("Northwest","South","East","East","Northwest","North","Midwest","Northeast","Northwest","Northeast","East","North","Northwest","Northeast","Southeast","North","Northeast","East","Northwest"))
+
+churn_by_region <- data_churn |> 
+  group_by(CSA_region) |> 
+  summarize(count = n(), churn = sum(CHURN_INT)) |> 
+  mutate(pct = churn / count) |> 
+  mutate(region = CSA_region) |> 
+  select(c(region, pct))
+
+states_by_region <- data_churn |> 
+  group_by(CSA_state) |> 
+  summarise(region = first(CSA_region)) |> 
+  mutate(state = CSA_state) |> 
+  select(!CSA_state) |> 
+  rbind(missing_df) |> 
+  left_join(churn_by_region, by = "region")
+
+plot_usmap(data = states_by_region, values = "region") + 
+  theme(legend.position = "right")
+
+plot_usmap(data = states_by_region, values = "pct", color = "blue") + 
+  scale_fill_continuous(low = "cadetblue1", high = "navy", name = "Churn PCT", label = scales::comma) + 
+  theme(legend.position = "right")
+
+summary(data_churn)
+```
+

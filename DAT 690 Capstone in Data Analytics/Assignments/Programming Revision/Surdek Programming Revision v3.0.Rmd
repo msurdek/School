@@ -260,7 +260,7 @@ data_churn_test <- data_churn_test |> get_attributes()
 ```{r, include = FALSE}
 # USAGE
 
-usage_pca_vars <- c('DIRECTAS','OVERAGE','ROAM','CHANGEM','DROPVCE','BLCKVCE','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT','DROPVCE','DROPBLK','BLCKVCE')
+usage_pca_vars <- c('MOU','DIRECTAS','OVERAGE','ROAM','CHANGEM','DROPVCE','BLCKVCE','UNANSVCE','THREEWAY','MOUREC','OUTCALLS','INCALLS','PEAKVCE','OPEAKVCE','DROPBLK','CALLFWDV','CALLWAIT','DROPVCE','DROPBLK','BLCKVCE')
 
 usage_pca_vars <- c('DIRECTAS','OVERAGE','ROAM','CALLFWDV','REVENUE','RECCHRGE')
 
@@ -530,15 +530,16 @@ usage_pcas_test <- data_churn_test |>
 usage_tidied_pca <- tidy(usage_pca_prep, 2)
 
 usage_tidied_pca %>%
-  filter(component %in% paste0("PC", 1:5)) %>%
+  filter(component %in% paste0("PC", 2:5)) %>%
   mutate(component = fct_inorder(component)) %>%
   ggplot(aes(value, terms, fill = terms)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~component, nrow = 1) +
-  labs(y = NULL)
+  labs(y = NULL) +
+  theme_bw()
 
 usage_tidied_pca %>%
-  filter(component %in% paste0("PC", 1:5)) %>%
+  filter(component %in% paste0("PC", 2:3)) %>%
   group_by(component) %>%
   ungroup() %>%
   mutate(terms = reorder_within(terms, abs(value), component)) %>%
@@ -546,7 +547,8 @@ usage_tidied_pca %>%
   geom_col() +
   facet_wrap(~component, scales = "free_y") +
   scale_y_reordered() +
-  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?") +
+  theme_bw()
 
 for(i in colnames(usage_pcas)) {
   dist_df <- usage_pcas |>
@@ -619,15 +621,10 @@ for(i in colnames(usage_churn_data)) {
     print(ttest)
   }
 }
+```
 
 
-
-
-
-
-
-
-
+```{r}
 coverage_churn_data <- data_churn |>
   select(c('CUSTOMER','CHURN_TARGET',all_of(coverage_pca_vars)))
 
@@ -985,7 +982,8 @@ eq_tidied_pca %>%
   ggplot(aes(value, terms, fill = terms)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~component, nrow = 1) +
-  labs(y = NULL)
+  labs(y = NULL) +
+  theme_bw()
 
 eq_tidied_pca %>%
   filter(component %in% paste0("PC", 1:5)) %>%
@@ -996,7 +994,8 @@ eq_tidied_pca %>%
   geom_col() +
   facet_wrap(~component, scales = "free_y") +
   scale_y_reordered() +
-  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?")
+  labs(x = "Absolute value of contribution",y = NULL, fill = "Positive?") +
+  theme_bw()
 
 for(i in colnames(eq_pcas)) {
   dist_df <- eq_pcas |>
